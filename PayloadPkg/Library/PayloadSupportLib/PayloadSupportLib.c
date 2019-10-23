@@ -106,12 +106,10 @@ ParseAcpiTableInfo (
     if (* (UINT32 *) (UINTN) (Entry64[Idx]) == EFI_ACPI_3_0_FIXED_ACPI_DESCRIPTION_TABLE_SIGNATURE) {
       Fadt = (EFI_ACPI_3_0_FIXED_ACPI_DESCRIPTION_TABLE *) (UINTN) (Entry64[Idx]);
       Status = PcdSet16S (PcdAcpiPmTimerBase, (UINT16)Fadt->PmTmrBlk);
-      DEBUG ((DEBUG_INFO, "ACPI PmTimer Base: 0x%x\n", PcdGet16 (PcdAcpiPmTimerBase)));
     } else if (* (UINT32 *) (UINTN) (Entry64[Idx]) ==
                EFI_ACPI_5_0_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE) {
       Mcfg = (EFI_ACPI_MEMORY_MAPPED_CONFIGURATION_BASE_ADDRESS_TABLE *) (UINTN) (Entry64[Idx]);
       Status = PcdSet64S (PcdPciExpressBaseAddress, Mcfg->Segment.BaseAddress);
-      DEBUG ((DEBUG_INFO, "PCI Express  Base: 0x%x\n", (UINT32)PcdGet64 (PcdPciExpressBaseAddress)));
     }
   }
 

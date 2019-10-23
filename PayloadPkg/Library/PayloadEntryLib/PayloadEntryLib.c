@@ -20,11 +20,112 @@
 #include <Library/DebugLogBufferLib.h>
 #include <Library/DebugPrintErrorLevelLib.h>
 #include <Library/ContainerLib.h>
+#include <Library/ConfigDataLib.h>
 #include <Guid/BootLoaderServiceGuid.h>
 #include <Guid/BootLoaderVersionGuid.h>
 #include <Guid/LoaderPlatformDataGuid.h>
 #include <Guid/LoaderPlatformInfoGuid.h>
 #include <Library/GraphicsLib.h>
+
+/**
+  Initialize Payload Global Data area
+
+  @retval     none
+
+**/
+STATIC
+VOID
+PayloadGlobalDataInit (
+  IN  VOID
+  )
+{
+  EFI_STATUS                 Status;
+  PAYLOAD_GLOBAL_DATA       *GlobalDataPtr;
+  LOADER_PLATFORM_DATA      *LoaderPlatformData;
+  CDATA_BLOB                *CfgDataPtr;
+  DEBUG_LOG_BUFFER_HEADER   *DebugLogBufferPtr;
+  CONTAINER_LIST            *ContainerListPtr;
+  LOADER_LIBRARY_DATA       *LoaderLibData;
+  BOOT_LOADER_SERVICES_LIST *BldServicesList;
+  VOID                      *PcdDataPtr;
+  LOADER_PLATFORM_INFO      *LoaderPlatformInfo;
+
+  GlobalDataPtr = (PAYLOAD_GLOBAL_DATA *)PcdGet32 (PcdGlobalDataAddress);
+
+  //
+  // Skip Global Data init just in case of Payload restart
+  //
+  if (GlobalDataPtr->Signature == PLD_GDATA_SIGNATURE) {
+    return;
+  }
+
+  ZeroMem (GlobalDataPtr, sizeof (PAYLOAD_GLOBAL_DATA));
+  GlobalDataPtr->Signature = PLD_GDATA_SIGNATURE;
+
+  //
+  // LOADER_PLATFORM_DATA
+  //
+  LoaderPlatformData = (LOADER_PLATFORM_DATA *) GetGuidHobData (NULL, NULL, &gLoaderPlatformDataGuid);
+  if (LoaderPlatformData != NULL) {
+    // Get config data pointer
+    CfgDataPtr = (CDATA_BLOB *)LoaderPlatformData->ConfigDataPtr;
+    if ((CfgDataPtr != NULL) && (CfgDataPtr->Signature == CFG_DATA_SIGNATURE)) {
+      GlobalDataPtr->CfgDataPtr = (VOID *)CfgDataPtr;
+    }
+
+    // Get debug log buffer pointer
+    DebugLogBufferPtr  = LoaderPlatformData->DebugLogBuffer;
+    if ((DebugLogBufferPtr != NULL) && (DebugLogBufferPtr->Signature == DEBUG_LOG_BUFFER_SIGNATURE)) {
+      GlobalDataPtr->LogBufPtr = (VOID *)DebugLogBufferPtr;
+    }
+
+    // Get container list pointer
+    ContainerListPtr = (CONTAINER_LIST *)LoaderPlatformData->ContainerList;
+    if ((ContainerListPtr != NULL) && (ContainerListPtr->Signature == CONTAINER_LIST_SIGNATURE)) {
+      GlobalDataPtr->ContainerList = (VOID *)ContainerListPtr;
+    }
+  }
+
+  //
+  // LOADER_LIBRARY_DATA
+  //
+  LoaderLibData = (LOADER_LIBRARY_DATA *) GetGuidHobData (NULL, NULL, &gLoaderLibraryDataGuid);
+  if (LoaderLibData != NULL) {
+    GlobalDataPtr->LibDataPtr = (VOID *) LoaderLibData->Data;
+
+    // Get PCD data base
+    Status = GetLibraryData (PcdGet8 (PcdPcdLibId), (VOID **)&PcdDataPtr);
+    if (!EFI_ERROR (Status)) {
+      GlobalDataPtr->PcdDataPtr = PcdDataPtr;
+    }
+  }
+
+  //
+  // BOOT_LOADER_SERVICES_LIST
+  //
+  BldServicesList = (BOOT_LOADER_SERVICES_LIST *) GetGuidHobData (NULL, NULL, &gBootLoaderServiceGuid);
+  if (BldServicesList != NULL) {
+    GlobalDataPtr->ServiceList = (VOID *)&BldServicesList->ServiceList;
+  }
+
+  //
+  // LOADER_PLATFORM_INFO
+  //
+  LoaderPlatformInfo = (LOADER_PLATFORM_INFO *) GetGuidHobData (NULL, NULL, &gLoaderPlatformInfoGuid);
+  if (LoaderPlatformInfo != NULL) {
+    GlobalDataPtr->LdrFeatures = LoaderPlatformInfo->LdrFeatures;
+  }
+
+  //
+  // PLT_DEVICE_TABLE
+  //
+  GlobalDataPtr->DeviceTable = GetGuidHobData (NULL, NULL, &gDeviceTableHobGuid);
+
+  //
+  // GetLoaderPerformanceInfo() function
+  //
+  GetLoaderPerformanceInfo (&GlobalDataPtr->PerfData);
+}
 
 /**
   Initialize critical payload global data.
@@ -44,20 +145,17 @@ PayloadInit (
   IN OUT UINT32                 *PldStatckSize
   )
 {
-  PAYLOAD_GLOBAL_DATA       *GlobalDataPtr;
-  EFI_HOB_GUID_TYPE         *GuidHob;
-  UINT8                     *BufPtr;
-  DEBUG_LOG_BUFFER_HEADER   *DebugLogBufferHdr;
   UINT32                    HeapBase;
   UINT32                    HeapSize;
   UINT64                    RsvdBase;
   UINT64                    RsvdSize;
   UINT32                    StackBase;
   UINT32                    StackSize;
-  LOADER_PLATFORM_DATA      *LoaderPlatformData;
   EFI_STATUS                PcdStatus1;
   EFI_STATUS                PcdStatus2;
-  CONTAINER_LIST            *ContainerList;
+  UINT32                    GlobalDataBase;
+  UINT32                    GlobalDataSize;
+  SYSTEM_TABLE_INFO        *SystemTableInfo;
 
   PcdStatus1 = PcdSet32S (PcdPayloadHobList, (UINT32)HobList);
 
@@ -68,6 +166,8 @@ PayloadInit (
   // +--------------------------------------------+ RsvdBase + RsvdSize
   // |   Reserved memory for Payload              |
   // +--------------------------------------------+ RsvdBase
+  // |   + Payload global data                    |
+  // +--------------------------------------------+ GlobalDataBase
   // |   + Payload heap                           |
   // +--------------------------------------------+ HeapBase
   // |   + Payload stack                          |
@@ -79,8 +179,13 @@ PayloadInit (
   GetPayloadReservedRamRegion (&RsvdBase, &RsvdSize);
   ASSERT ((RsvdBase & EFI_PAGE_MASK) == 0);
 
+  GlobalDataSize = ALIGN_UP (sizeof (PAYLOAD_GLOBAL_DATA), EFI_PAGE_SIZE);
+  GlobalDataBase = (UINT32)RsvdBase - GlobalDataSize;
+  PcdStatus2 = PcdSet32S (PcdGlobalDataAddress, (UINT32) (UINTN)GlobalDataBase);
+  ASSERT_EFI_ERROR (PcdStatus1 | PcdStatus2);
+
   HeapSize  = ALIGN_UP (PcdGet32 (PcdPayloadHeapSize), EFI_PAGE_SIZE);
-  HeapBase = (UINT32)RsvdBase - HeapSize;
+  HeapBase = GlobalDataBase - HeapSize;
 
   StackSize = ALIGN_UP (PcdGet32 (PcdPayloadStackSize), EFI_PAGE_SIZE);
   StackBase = HeapBase - StackSize;
@@ -89,33 +194,22 @@ PayloadInit (
   AddMemoryResourceRange (HeapBase, EFI_SIZE_TO_PAGES (HeapSize), \
                           RsvdBase, EFI_SIZE_TO_PAGES ((UINT32)RsvdSize));
 
-  GlobalDataPtr = AllocateZeroPool (sizeof (PAYLOAD_GLOBAL_DATA));
-  GlobalDataPtr->Signature = PLD_GDATA_SIGNATURE;
-  PcdStatus2 = PcdSet32S (PcdGlobalDataAddress, (UINT32) (UINTN)GlobalDataPtr);
-  ASSERT_EFI_ERROR (PcdStatus1 | PcdStatus2);
+  //
+  // Initialize Global Data
+  //
+  PayloadGlobalDataInit ();
 
-  // Create Debug Log Buffer and init configuration data
-  GuidHob = GetNextGuidHob (&gLoaderPlatformDataGuid, (VOID *)PcdGet32 (PcdPayloadHobList));
-  if (GuidHob != NULL) {
-    LoaderPlatformData = (LOADER_PLATFORM_DATA *) GET_GUID_HOB_DATA (GuidHob);
-    GlobalDataPtr->CfgDataPtr = LoaderPlatformData->ConfigDataPtr;
-
-    DebugLogBufferHdr  = LoaderPlatformData->DebugLogBuffer;
-    if (DebugLogBufferHdr->Signature == DEBUG_LOG_BUFFER_SIGNATURE) {
-      BufPtr = AllocatePool (DebugLogBufferHdr->TotalLength);
-      CopyMem (BufPtr, DebugLogBufferHdr, DebugLogBufferHdr->UsedLength);
-      GlobalDataPtr->LogBufPtr = BufPtr;
-    }
-
-    ContainerList = LoaderPlatformData->ContainerList;
-    if (ContainerList != NULL) {
-      BufPtr = AllocatePool (ContainerList->TotalLength);
-      CopyMem (BufPtr, ContainerList, ContainerList->TotalLength);
-      GlobalDataPtr->ContainerList = ContainerList;
-    }
-
+  //
+  // Initialize PCIE base, Acpi Timer base
+  //
+  SystemTableInfo = GetSystemTableInfo ();
+  if (SystemTableInfo != NULL) {
+    ParseAcpiTableInfo ((UINT32)SystemTableInfo->AcpiTableBase);
   }
 
+  //
+  // Initialize Serial Port
+  //
   SerialPortInitialize ();
 
   if (PldHeapBase != NULL) {
@@ -145,96 +239,17 @@ SecStartup (
   IN VOID                   *PldBase
   )
 {
-  PAYLOAD_GLOBAL_DATA       *GlobalDataPtr;
-  SYSTEM_TABLE_INFO         *SystemTableInfo;
   UINT64                    TimeStamp;
-  RETURN_STATUS             Status;
-  EFI_HOB_GUID_TYPE         *GuidHob;
-  LOADER_LIBRARY_DATA       *LoaderLibData;
-  UINT32                    AllocateLen;
-  UINT32                    Idx;
-  UINT8                     *BufPtr;
-  LIBRARY_DATA              *LibData;
-  VOID                      *PcdDataPtr;
-  BOOT_LOADER_SERVICES_LIST *BldServicesList;
-  UINT32                     HeapBase;
-  UINT32                     StackBase;
-  UINT32                     StackSize;
-  LOADER_PLATFORM_INFO       *LoaderPlatformInfo;
+  UINT32                    StackBase;
+  UINT32                    StackSize;
 
   TimeStamp = AsmReadTsc();
 
-  PayloadInit (Params, &HeapBase, &StackBase, &StackSize);
-  GlobalDataPtr = (PAYLOAD_GLOBAL_DATA *)PcdGet32 (PcdGlobalDataAddress);
+  PayloadInit (Params, NULL, &StackBase, &StackSize);
 
   // DEBUG will be available after PayloadInit ()
   DEBUG ((DEBUG_INIT, "\nPayload startup\n"));
-
-  // Copy libraries data
-  GuidHob = GetNextGuidHob (&gLoaderLibraryDataGuid, (VOID *)PcdGet32 (PcdPayloadHobList));
-  if (GuidHob != NULL) {
-    LoaderLibData = (LOADER_LIBRARY_DATA *)GET_GUID_HOB_DATA (GuidHob);
-    LibData       = (LIBRARY_DATA *) LoaderLibData->Data;
-    AllocateLen   = 0;
-    for (Idx = 0; Idx < LoaderLibData->Count; Idx++) {
-      AllocateLen += ALIGN_UP (LibData[Idx].BufSize, sizeof (UINTN));
-    }
-
-    AllocateLen += LoaderLibData->Count * sizeof (LIBRARY_DATA);
-    BufPtr = AllocatePool (AllocateLen);
-
-    CopyMem (BufPtr, LibData, LoaderLibData->Count * sizeof (LIBRARY_DATA));
-    LibData = (LIBRARY_DATA *) BufPtr;
-    BufPtr += LoaderLibData->Count * sizeof (LIBRARY_DATA);
-
-    if (AllocateLen > 0) {
-      for (Idx = 0; Idx < LoaderLibData->Count; Idx++) {
-        if (LibData[Idx].BufBase != 0) {
-          CopyMem (BufPtr, (VOID *)LibData[Idx].BufBase, LibData[Idx].BufSize);
-          LibData[Idx].BufBase = (UINT32)BufPtr;
-          BufPtr += ALIGN_UP (LibData[Idx].BufSize, sizeof (UINTN));
-        }
-      }
-    }
-    GlobalDataPtr->LibDataPtr = (VOID *) LibData;
-  }
-
-  //
-  // Get PCD data base
-  //
-  Status = GetLibraryData (PcdGet8 (PcdPcdLibId), (VOID **)&PcdDataPtr);
-  if (!EFI_ERROR (Status)) {
-    GlobalDataPtr->PcdDataPtr = PcdDataPtr;
-  }
-
-  //
-  // Init boot loader service
-  //
-  GuidHob = GetNextGuidHob (&gBootLoaderServiceGuid, GetHobListPtr());
-  if (GuidHob != NULL) {
-    BldServicesList = (BOOT_LOADER_SERVICES_LIST *)GET_GUID_HOB_DATA (GuidHob);
-    GlobalDataPtr->ServiceList = &BldServicesList->ServiceList;
-  }
-
-  LoaderPlatformInfo = (LOADER_PLATFORM_INFO  *) GetGuidHobData (NULL, NULL, &gLoaderPlatformInfoGuid);
-  if (LoaderPlatformInfo != NULL) {
-    GlobalDataPtr->LdrFeatures = LoaderPlatformInfo->LdrFeatures;
-  }
-
-  // Init device table
-  GlobalDataPtr->DeviceTable =  GetGuidHobData (NULL, NULL, &gDeviceTableHobGuid);
-
-  //
-  // GetLoaderPerformanceInfo() function
-  //
-  GetLoaderPerformanceInfo (&GlobalDataPtr->PerfData);
   AddMeasurePointTimestamp (0x4000, TimeStamp);
-
-  // ACPI table
-  SystemTableInfo = GetSystemTableInfo ();
-  if (SystemTableInfo != NULL) {
-    ParseAcpiTableInfo ((UINT32)SystemTableInfo->AcpiTableBase);
-  }
 
   DEBUG_CODE_BEGIN ();
   // Initialize HOB/Stack region with known pattern so that the usage can be detected
@@ -245,5 +260,5 @@ SecStartup (
     );
   DEBUG_CODE_END ();
 
-  SwitchStack ((SWITCH_STACK_ENTRY_POINT)PayloadMain, &Params, PldBase, (VOID *) (UINTN)HeapBase);
+  SwitchStack ((SWITCH_STACK_ENTRY_POINT)PayloadMain, &Params, PldBase, (VOID *) (UINTN)(StackBase + StackSize));
 }
