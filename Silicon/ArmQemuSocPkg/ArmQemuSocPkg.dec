@@ -1,0 +1,18 @@
+## @file
+#
+#  Copyright (c) 2017, Intel Corporation. All rights reserved.<BR>
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = ArmQemuSocPkg
+  PACKAGE_GUID                   = 6EBF6311-9465-4b83-9498-6682F5918EB4
+  PACKAGE_VERSION                = 0.1
+
+[Includes]
+
+[Guids]
+
+[PcdsFixedAtBuild]

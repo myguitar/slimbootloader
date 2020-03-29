@@ -1,0 +1,18 @@
+## @file
+#
+#  Copyright (c) 2018, Intel Corporation. All rights reserved.<BR>
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+##
+#
+# Delta configuration values for platform ID 0x0001
+#
+# This file is not auto-generated. Rather, users must input all the settings
+# that are needed to be overwritten from the base DSC into this file.
+# This file is similar to changing BSF file in BCT for the new settings.
+#
+
+PLATFORMID_CFG_DATA.PlatformId | 1
+
+PLAT_NAME_CFG_DATA.PlatformName            | 'QEMU_ARM'
+
+GEN_CFG_DATA.PayloadId                     | 'AUTO'
