@@ -61,6 +61,19 @@ typedef struct {
 #define        FEATURE_MMC_FORCE_TUNING         BIT3
 #define        FEATURE_VERIFIED_BOOT            BIT4
 
+typedef enum {
+  PciBarTypeUnknown = 0,
+  PciBarTypeIo16,
+  PciBarTypeIo32,
+  PciBarTypeMem32,
+  PciBarTypePMem32,
+  PciBarTypeMem64,
+  PciBarTypePMem64,
+  PciBarTypeIo,
+  PciBarTypeMem,
+  PciBarTypeMaxType
+} PCI_BAR_TYPE;
+
 #define MM_PCI_ADDRESS( Bus, Device, Function, Register ) \
   ( (UINTN)PcdGet64(PcdPciExpressBaseAddress) + \
     (UINTN)((Bus) << 20) + \
