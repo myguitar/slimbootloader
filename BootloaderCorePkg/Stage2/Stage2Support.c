@@ -16,6 +16,42 @@ const PLATFORM_SERVICE   mPlatformService = {
   .NotifyPhase      = BoardNotifyPhase
 };
 
+/**
+  This function traverses each memory resource hob type and calls the handler.
+
+  @param  HobListPtr         A HOB list pointer.
+  @param  MemResHobCallback  A function pointer to the callback handler
+  @param  Param              A pointer to the parameter which will be passed into handler.
+
+**/
+VOID
+EFIAPI
+TraverseMemoryResourceHob (
+  IN  CONST VOID            *HobListPtr,
+  IN  MEM_RES_HOB_CALLBACK   MemResHobCallback,
+  IN  VOID                  *Param
+  )
+{
+  EFI_PEI_HOB_POINTERS    Hob;
+
+  /*
+   * Get the HOB list for processing
+   */
+  Hob.Raw = (VOID *)HobListPtr;
+
+  /*
+   * Collect memory ranges
+   */
+  while (!END_OF_HOB_LIST (Hob)) {
+    if (Hob.Header->HobType == EFI_HOB_TYPE_RESOURCE_DESCRIPTOR) {
+      if ((Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_MEMORY_RESERVED) ||
+          (Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_SYSTEM_MEMORY)) {
+        MemResHobCallback (Hob.ResourceDescriptor, Param);
+      }
+    }
+    Hob.Raw = GET_NEXT_HOB (Hob);
+  }
+}
 
 /**
   Platform notify service.
@@ -32,6 +68,10 @@ BoardNotifyPhase (
   FSP_INIT_PHASE  FspPhase;
   UINT8           FspPhaseMask;
   EFI_STATUS      Status;
+
+  if (PcdGet32 (PcdFSPSSize) == 0) {
+    return;
+  }
 
   // This is board notification from payload
   FspPhaseMask = 0;
@@ -480,8 +520,10 @@ BuildExtraInfoHob (
   // Build ACPI Hob
   SystemTableInfo = BuildGuidHob (&gLoaderSystemTableInfoGuid, sizeof (SYSTEM_TABLE_INFO));
   if (SystemTableInfo != NULL) {
-    SystemTableInfo->AcpiTableBase = S3Data->AcpiBase;
-    SystemTableInfo->AcpiTableSize = S3Data->AcpiTop - S3Data->AcpiBase;
+    if (S3Data != NULL) {
+      SystemTableInfo->AcpiTableBase = S3Data->AcpiBase;
+      SystemTableInfo->AcpiTableSize = S3Data->AcpiTop - S3Data->AcpiBase;
+    }
     SystemTableInfo->SmbiosTableBase = (UINT64)PcdGet32 (PcdSmbiosTablesBase);
     SystemTableInfo->SmbiosTableSize = (UINT32)PcdGet16 (PcdSmbiosTablesSize);
     PlatformUpdateHobInfo (&gLoaderSystemTableInfoGuid, SystemTableInfo);
@@ -540,10 +582,12 @@ BuildExtraInfoHob (
 
   // Build device table Hob
   DeviceTable  = (PLT_DEVICE_TABLE *)LdrGlobal->DeviceTable;
-  Length = sizeof (PLT_DEVICE_TABLE) + sizeof (PLT_DEVICE) * DeviceTable->DeviceNumber;
-  DeviceTableHob = BuildGuidHob (&gDeviceTableHobGuid, Length);
-  if (DeviceTableHob != NULL) {
-    CopyMem (DeviceTableHob, DeviceTable, Length);
+  if (DeviceTable != NULL) {
+    Length = sizeof (PLT_DEVICE_TABLE) + sizeof (PLT_DEVICE) * DeviceTable->DeviceNumber;
+    DeviceTableHob = BuildGuidHob (&gDeviceTableHobGuid, Length);
+    if (DeviceTableHob != NULL) {
+      CopyMem (DeviceTableHob, DeviceTable, Length);
+    }
   }
 
   // Build SMMRAM info Hob
@@ -575,7 +619,10 @@ BuildExtraInfoHob (
     LoaderPlatformInfo->PlatformId = GetPlatformId ();
     LoaderPlatformInfo->LdrFeatures = LdrGlobal->LdrFeatures;
     SysCpuInfo = MpGetInfo ();
-    LoaderPlatformInfo->CpuCount = SysCpuInfo->CpuCount;
+    LoaderPlatformInfo->CpuCount = 1;
+    if (SysCpuInfo != NULL) {
+      LoaderPlatformInfo->CpuCount = SysCpuInfo->CpuCount;
+    }
     PlatformUpdateHobInfo (&gLoaderPlatformInfoGuid, LoaderPlatformInfo);
   }
 

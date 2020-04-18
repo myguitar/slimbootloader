@@ -150,6 +150,7 @@ class BaseBoard(object):
         self.LOWEST_SUPPORTED_FW_VER = 1
 
         self.FLASH_BLOCK_SIZE       = 0x1000
+        self.FLASH_LAYOUT_TOPDOWN   = 1
         self.FLASH_LAYOUT_START     = 0x100000000
         self.FLASH_BASE             = 0
         self.FLASH_SIZE             = 0
@@ -267,6 +268,10 @@ class BaseBoard(object):
 
         self.PCI_MEM64_BASE        = 0
         self.BUILD_ARCH            = 'IA32'
+
+        # For Arm/AArch64
+        self.SYSTEM_MEMORY_BASE    = 0
+        self.SYSTEM_MEMORY_SIZE    = 0
 
         for key, value in list(kwargs.items()):
             setattr(self, '%s' % key, value)
@@ -585,7 +590,7 @@ class Build(object):
 
             if remaining_size > 0:
                 comp_node = find_component_in_image_list (img_list[idx][0], img_list)
-                pos  = STITCH_OPS.MODE_POS_HEAD if comp_node is None else comp_node[4]
+                pos  = (STITCH_OPS.MODE_POS_HEAD if self._board.FLASH_LAYOUT_TOPDOWN else STITCH_OPS.MODE_POS_TAIL) if comp_node is None else comp_node[4]
                 comp = {'name':'EMPTY.bin', 'size':remaining_size, 'flag':flags}
                 if pos == STITCH_OPS.MODE_POS_HEAD:
                     comp_list.insert (oldidx, comp)
@@ -610,7 +615,9 @@ class Build(object):
             master_idx  = region_name_list.index(master_name)
             process_image_list (master_idx, 0)
             image_size = sum (comp['size'] for comp in comp_list)
-            image_base = self._board.FLASH_LAYOUT_START - image_size
+            image_base = self._board.FLASH_LAYOUT_START
+            if self._board.FLASH_LAYOUT_TOPDOWN:
+                image_base = self._board.FLASH_LAYOUT_START - image_size
             image_offs = 0
             for comp in comp_list:
                 comp['bname']  = get_redundant_info (comp['name'])[0]
@@ -631,6 +638,9 @@ class Build(object):
 
 
     def patch_stages (self):
+        pcd_fixed_fixup = 0
+        if not self._board.FLASH_LAYOUT_TOPDOWN:
+            pcd_fixed_fixup = self._board.FLASH_LAYOUT_START
 
         print('Patching STAGE1A')
         extra_cmd = [
@@ -638,8 +648,8 @@ class Build(object):
             "0xFFFFFFFC,            _BASE_STAGE1A_,                    @Patch BFV",
             "_OFFS_STAGE1A_,        Stage1A:__ModuleEntryPoint,        @Patch Stage1A Entry",
             "_OFFS_STAGE1A_+4,      Stage1A:BASE,                      @Patch Module Base",
-            "<Stage1A:__gPcd_BinaryPatch_PcdVerInfoBase>,  {3473A022-C3C2-4964-B309-22B3DFB0B6CA:0x1C}, @Patch VerInfo",
-            "<Stage1A:__gPcd_BinaryPatch_PcdFileDataBase>, {EFAC3859-B680-4232-A159-F886F2AE0B83:0x1C}, @Patch PcdBase"
+            "<Stage1A:__gPcd_BinaryPatch_PcdVerInfoBase>+0x%X,  {3473A022-C3C2-4964-B309-22B3DFB0B6CA:0x1C}, @Patch VerInfo" % pcd_fixed_fixup,
+            "<Stage1A:__gPcd_BinaryPatch_PcdFileDataBase>+0x%X, {EFAC3859-B680-4232-A159-F886F2AE0B83:0x1C}, @Patch PcdBase" % pcd_fixed_fixup
         ]
 
         if self._arch == 'X64':
@@ -678,7 +688,7 @@ class Build(object):
                 ])
         if self._board.HAVE_VERIFIED_BOOT:
             extra_cmd.append (
-                "<Stage1A:__gPcd_BinaryPatch_PcdHashStoreBase>, {18EDB1DF-1DBE-4EC5-8E26-C44808B546E1:0x1C}, @Patch HashStore",
+                "<Stage1A:__gPcd_BinaryPatch_PcdHashStoreBase>+0x%X, {18EDB1DF-1DBE-4EC5-8E26-C44808B546E1:0x1C}, @Patch HashStore" % pcd_fixed_fixup,
             )
         patch_fv(self._fv_dir, *extra_cmd)
 
@@ -771,7 +781,8 @@ class Build(object):
         image_base = self._board.FLASH_LAYOUT_START
         for idx, comp_name in enumerate(['STAGE1A', 'STAGE1B', 'STAGE2']):
             if not hasattr(self._board, '%s_BASE' % comp_name):
-                image_base -= getattr(self._board, '%s_SIZE' % comp_name)
+                if self._board.FLASH_LAYOUT_TOPDOWN:
+                    image_base -= getattr(self._board, '%s_SIZE' % comp_name)
                 if idx > 0:
                     image_base &= ~0xFFFFF
                 setattr(self._board, '%s_BASE' % comp_name, image_base)
@@ -821,7 +832,10 @@ class Build(object):
                 raise Exception ('FLASH_SIZE needs to be defined !')
             else:
                 setattr(self._board, 'FLASH_SIZE' , getattr(self._board, 'SLIMBOOTLOADER_SIZE'))
-        setattr(self._board, 'FLASH_BASE' , 0x100000000 - getattr(self._board, 'FLASH_SIZE'))
+        if self._board.FLASH_LAYOUT_TOPDOWN:
+            setattr(self._board, 'FLASH_BASE' , self._board.FLASH_LAYOUT_START - getattr(self._board, 'FLASH_SIZE'))
+        else:
+            setattr(self._board, 'FLASH_BASE' , self._board.FLASH_LAYOUT_START)
 
         if getattr(self._board, 'ACM_SIZE') > 0:
             acm_base = getattr(self._board, 'ACM_BASE')
@@ -957,7 +971,15 @@ class Build(object):
                 fi.close()
 
             if comp_name == self._image:
-                bins = b'\xff' * (self._board.SLIMBOOTLOADER_SIZE - len(bins)) + bins
+                if self._board.FLASH_LAYOUT_TOPDOWN:
+                    bins = b'\xff' * (self._board.SLIMBOOTLOADER_SIZE - len(bins)) + bins
+                else:
+                    reset_vector_file = os.path.join('BootloaderCorePkg', 'Stage1A', 'Arm', 'Vtf0', 'Bin', 'ResetVector.arm.raw')
+                    fi_reset = open(reset_vector_file, 'rb')
+                    reset_vector_bins = bytearray(fi_reset.read())
+                    fi_reset.close()
+                    reset_vector_bins_len = len(reset_vector_bins)
+                    bins = reset_vector_bins + b'\xff' * (self._board.FLASH_LAYOUT_START - reset_vector_bins_len) + bins
 
             fo = open(out_path,'wb')
             fo.write(bins)
@@ -1160,8 +1182,13 @@ class Build(object):
                              self._board._SIGNING_SCHEME, HASH_VAL_STRING[self._board.SIGN_HASH_TYPE])
 
         # rebuild reset vector
-        vtf_dir = os.path.join('BootloaderCorePkg', 'Stage1A', 'Ia32', 'Vtf0')
-        x = subprocess.call([sys.executable, 'Build.py', self._arch.lower()],  cwd=vtf_dir)
+        vtf_args = ''
+        if self._arch == 'ARM':
+            vtf_dir = os.path.join('BootloaderCorePkg', 'Stage1A', 'Arm', 'Vtf0')
+            vtf_args = '0x%x' % self._board.FLASH_LAYOUT_START
+        else:
+            vtf_dir = os.path.join('BootloaderCorePkg', 'Stage1A', 'Ia32', 'Vtf0')
+        x = subprocess.call([sys.executable, 'Build.py', self._arch.lower(), vtf_args],  cwd=vtf_dir)
         if x: raise Exception ('Failed to build reset vector !')
 
     def build(self):
@@ -1274,7 +1301,7 @@ class Build(object):
         # print flash map
         if len(self._comp_list) > 0:
             print_addr = False if getattr(self._board, "GetFlashMapList", None) else True
-            flash_map_text = decode_flash_map (os.path.join(self._fv_dir, 'FlashMap.bin'), print_addr)
+            flash_map_text = decode_flash_map (self._board.FLASH_LAYOUT_TOPDOWN, self._board.FLASH_LAYOUT_START, os.path.join(self._fv_dir, 'FlashMap.bin'), print_addr)
             print('%s' % flash_map_text)
             fd = open (os.path.join(self._fv_dir, 'FlashMap.txt'), 'w')
             fd.write (flash_map_text)
@@ -1324,7 +1351,7 @@ def main():
     buildp.add_argument('-v',  '--usever',  action='store_true', help='Use board version file')
     buildp.add_argument('-fp', dest='fsppath', type=str, help='FSP binary path relative to FspBin in Silicon folder', default='')
     buildp.add_argument('-fd', '--fspdebug', action='store_true', help='Use debug FSP binary')
-    buildp.add_argument('-a',  '--arch', choices=['ia32', 'x64'], help='Specify the ARCH for build. Default is to build IA32 image.', default ='ia32')
+    buildp.add_argument('-a',  '--arch', choices=['ia32', 'x64', 'arm'], help='Specify the ARCH for build. Default is to build IA32 image.', default ='ia32')
     buildp.add_argument('-no', '--noopt', action='store_true', help='No compile/link optimization for debugging purpose. Not enabled in Release build.')
     buildp.add_argument('-p',  '--payload' , dest='payload', type=str, help='Payload file name', default ='OsLoader.efi')
     buildp.add_argument('board', metavar='board', choices=board_names, help='Board Name (%s)' % ', '.join(board_names))

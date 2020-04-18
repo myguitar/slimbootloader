@@ -13,14 +13,17 @@
   VERSION_STRING                 = 1.0
   LIBRARY_CLASS                  = LinuxLib
 
-[Sources]
-  LinuxLib.c
-
 [Sources.IA32]
+  Ia32/LinuxLibArch.c
   Ia32/JumpToKernel.nasm
 
 [Sources.X64]
+  Ia32/LinuxLibArch.c
   X64/JumpToKernel.nasm
+
+[Sources.ARM]
+  Arm/LinuxLibArch.c
+  Arm/JumpToKernel.S
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -30,8 +33,10 @@
   BaseLib
   BaseMemoryLib
   DebugLib
-  PagingLib
   PrintLib
+
+[LibraryClasses.IA32, LibraryClasses.X64]
+  PagingLib
 
 [Guids]
   gEfiGraphicsInfoHobGuid

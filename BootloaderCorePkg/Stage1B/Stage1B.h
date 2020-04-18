@@ -1,6 +1,6 @@
 /** @file
 
-  Copyright (c) 2016 - 2019, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2016 - 2020, Intel Corporation. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -66,6 +66,18 @@ ContinueFunc (
 VOID
 RemapStage (
   VOID
+  );
+
+EFI_STATUS
+MemoryInit (
+  OUT  VOID    **HobList
+  );
+
+EFI_STATUS
+GetArchReservedMemory (
+  IN   VOID     *HobList,
+  OUT  UINTN    *MemBase,
+  OUT  UINTN    *MemSize
   );
 
 #endif

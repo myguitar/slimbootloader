@@ -45,6 +45,9 @@
   PayloadPkg/PayloadPkg.dec
   Platform/CommonBoardPkg/CommonBoardPkg.dec
 
+[Packages]
+  ArmPkg/ArmPkg.dec
+
 [LibraryClasses]
   BaseLib
   DebugLib

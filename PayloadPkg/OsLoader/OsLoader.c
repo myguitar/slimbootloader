@@ -409,7 +409,7 @@ SetupBootImage (
   } else {
     DEBUG ((DEBUG_INFO, "Assume BzImage...\n"));
     LinuxImage = &LoadedImage->Image.Linux;
-    Status = LoadBzImage (LinuxImage->BootFile.Addr,
+    Status = LoadBzImage (LinuxImage->BootFile.Addr, LinuxImage->BootFile.Size,
                           LinuxImage->InitrdFile.Addr, LinuxImage->InitrdFile.Size,
                           LinuxImage->CmdFile.Addr,    LinuxImage->CmdFile.Size);
     if (!EFI_ERROR (Status)) {
@@ -625,7 +625,7 @@ StartBooting (
       return RETURN_INVALID_PARAMETER;
     }
     BeforeOSJump ("Starting MB Kernel ...");
-    JumpToMultibootOs((IA32_BOOT_STATE*)&MultiBoot->BootState);
+///    JumpToMultibootOs((IA32_BOOT_STATE*)&MultiBoot->BootState);
     Status = EFI_DEVICE_ERROR;
 
   } else if ((LoadedImage->Flags & (LOADED_IMAGE_PE32 | LOADED_IMAGE_FV)) != 0) {

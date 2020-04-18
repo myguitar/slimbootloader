@@ -13,12 +13,8 @@
 #include <Library/HobLib.h>
 #include <Library/LinuxLib.h>
 #include <Library/PagingLib.h>
-#include <Library/PrintLib.h>
 #include <Guid/GraphicsInfoHob.h>
 #include <Guid/MemoryMapInfoGuid.h>
-#include <Guid/SystemTableInfoGuid.h>
-
-#define ACPI_RSDP_CMDLINE_STR         "acpi_rsdp="
 
 /**
   Jump to kernel entry point.
@@ -199,6 +195,7 @@ EFI_STATUS
 EFIAPI
 LoadBzImage (
   IN  CONST VOID                  *KernelBase,
+  IN      UINT32                   KernelLen,
   IN  CONST VOID                  *InitRdBase,
   IN      UINT32                   InitRdLen,
   IN  CONST VOID                  *CmdLineBase,
@@ -224,7 +221,7 @@ LoadBzImage (
   BaseBp = (BOOT_PARAMS *) ImageBase;
   Bp = GetLinuxBootParams ();
   ZeroMem ((VOID *)Bp, sizeof (BOOT_PARAMS));
-  CopyMem (&Bp->Hdr, &BaseBp->Hdr, sizeof (SETUP_HEADER));
+  Bp->Hdr = BaseBp->Hdr;
 
   if (Bp->Hdr.SetupSectorss != 0) {
     BootParamSize = (Bp->Hdr.SetupSectorss + 1) * 512;
@@ -267,8 +264,6 @@ UpdateLinuxBootParams (
   MEMORY_MAP_INFO            *MapInfo;
   UINTN                       Index;
   EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *GfxMode;
-  SYSTEM_TABLE_INFO          *SystemTableInfo;
-  CHAR8                       ParamValue[64];
 
   if (Bp == NULL) {
     return;
@@ -320,23 +315,6 @@ UpdateLinuxBootParams (
     E820Entry++;
   }
   Bp->E820Entries = (UINT8)MapInfo->Count;
-
-  //
-  // Append acpi_rsdp only if it does not exist in the kernel command line
-  // to allow a user override acpi_rdsp kernel parameter.
-  // To check the existence, simply search for "acpi_rsdp=" string since it's
-  // case-sensitive with the immediate '=' trailing according to kernel spec.
-  //
-  if (AsciiStrStr ((CHAR8 *)(UINTN)Bp->Hdr.CmdLinePtr,(CHAR8 *)ACPI_RSDP_CMDLINE_STR) == NULL) {
-    GuidHob = GetFirstGuidHob (&gLoaderSystemTableInfoGuid);
-    if (GuidHob != NULL) {
-      SystemTableInfo = (SYSTEM_TABLE_INFO *)GET_GUID_HOB_DATA (GuidHob);
-
-      AsciiSPrint (ParamValue, sizeof (ParamValue), " %a0x%lx", ACPI_RSDP_CMDLINE_STR, SystemTableInfo->AcpiTableBase);
-      AsciiStrCatS ((CHAR8 *)(UINTN)Bp->Hdr.CmdLinePtr, CMDLINE_LENGTH_MAX, ParamValue);
-      Bp->Hdr.CmdlineSize = (UINT32)AsciiStrLen ((CHAR8 *)(UINTN)Bp->Hdr.CmdLinePtr);
-    }
-  }
 }
 
 /**
@@ -352,34 +330,5 @@ LinuxBoot (
   IN VOID   *Params
   )
 {
-  BOOT_PARAMS   *Bp;
-  UINTN          KernelStart;
-
-  Bp = GetLinuxBootParams ();
-  if (Bp != NULL) {
-    UpdateLinuxBootParams (Bp);
-    KernelStart = (UINTN)Bp->Hdr.Code32Start;
-    if (!IsLongModeEnabled ()) {
-      if (IsLongModeSupported () && ((Bp->Hdr.XloadFlags & BIT0) == BIT0)) {
-        KernelStart += 0x200;
-        DEBUG ((DEBUG_INFO, "Switch to LongMode and jump to 64-bit kernel entrypoint ...\n"));
-        JumpToLongMode ((UINT64)(UINTN)JumpToKernel64,
-                        (UINT64)KernelStart,
-                        (UINT64)(UINTN)Bp,
-                        (UINT64)(UINTN)HobList);
-      } else {
-        JumpToKernel ((VOID *)KernelStart, Bp);
-      }
-    } else {
-      if ((Bp->Hdr.XloadFlags & BIT0) == BIT0) {
-        DEBUG ((DEBUG_INFO, "Jump to 64-bit kernel entrypoint ...\n"));
-        KernelStart += 0x200;
-        JumpToKernel ((VOID *)KernelStart, Bp);
-      } else {
-        // In long mode already, but kernel is not 64-bit
-        DEBUG ((DEBUG_ERROR, "Unsupported kernel mode !\n"));
-      }
-    }
-  }
   CpuDeadLoop ();
 }

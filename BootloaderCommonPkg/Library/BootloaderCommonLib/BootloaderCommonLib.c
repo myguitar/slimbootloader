@@ -386,7 +386,6 @@ GetComponentInfoByPartition (
   )
 {
   FLASH_MAP_ENTRY_DESC  *Entry;
-  FLASH_MAP             *FlashMapPtr;
   UINT32                RomBase;
 
   Entry = GetComponentEntryByPartition(Signature, IsBackupPartition);
@@ -394,12 +393,7 @@ GetComponentInfoByPartition (
     return EFI_NOT_FOUND;
   }
 
-  FlashMapPtr = GetFlashMapPtr ();
-  if (FlashMapPtr == NULL) {
-    return EFI_NOT_FOUND;
-  }
-
-  RomBase = (UINT32) (0x100000000ULL - FlashMapPtr->RomSize);
+  RomBase = PcdGet32 (PcdFlashBaseAddress);
 
   //
   // If base is not 0, fill and return the value

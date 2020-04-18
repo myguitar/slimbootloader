@@ -22,13 +22,16 @@ class Board(BaseBoard):
 
         super(Board, self).__init__(*args, **kwargs)
 
-        EXECUTE_IN_PLACE              = 0
+        EXECUTE_IN_PLACE              = 1
         FREE_TEMP_RAM_TOP             = 0x50000000
 
-        self.CPU_CORES_STACK_BASE         = 0x4007c000
-        self.CPU_CORE_PRIMARY_STACK_SIZE  = 0x4000
+        self.STAGE1_STACK_SIZE            = 0x00002000
+        self.STAGE1_DATA_SIZE             = 0x00006000
+
+        self.CPU_CORE_PRIMARY_STACK_SIZE  = self.STAGE1_STACK_SIZE + self.STAGE1_DATA_SIZE
+        self.CPU_CORES_STACK_BASE         = 0x40080000 - self.CPU_CORE_PRIMARY_STACK_SIZE
         self.SYSTEM_MEMORY_BASE           = 0x40000000
-        self.SYSTEM_NEMORY_SIZE           = 0x40000000
+        self.SYSTEM_MEMORY_SIZE           = 0x40000000
 
         self.VERINFO_IMAGE_ID         = 'ARM_QEMU '
         self.VERINFO_PROJ_MAJOR_VER   = 0
@@ -143,9 +146,6 @@ class Board(BaseBoard):
             self.OS_LOADER_FD_SIZE   += 0x00010000
             self.OS_LOADER_FD_NUMBLK  = self.OS_LOADER_FD_SIZE // self.FLASH_BLOCK_SIZE
 
-        self.STAGE1_STACK_SIZE    = 0x00002000
-        self.STAGE1_DATA_SIZE     = 0x00006000
-
         self.CFG_DATABASE_SIZE    = self.CFGDATA_SIZE
 
         # Add following to force to use a specific platform ID
@@ -167,12 +167,13 @@ class Board(BaseBoard):
         dsc_libs = {}
         # These libraries will be added into the DSC files
         dsc_libs['ARM'] = [
+            'IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsicArmVirt.inf',
             'LoaderLib|Platform/CommonBoardPkg/Library/LoaderLib/LoaderLib.inf',
             'PlatformHookLib|Silicon/$(SILICON_PKG_NAME)/Library/PlatformHookLib/PlatformHookLib.inf',
             'ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerVirtCounterLib/ArmGenericTimerVirtCounterLib.inf',
             'ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf',
             'TimerLib|ArmPkg/Library/ArmArchTimerLib/ArmArchTimerLib.inf',
-            'PL011UartLib|BootloaderCommonPkg/Library/PL011UartLib/PL011UartLib.inf',
+            'PL011UartLib|Silicon/ArmCommonSocPkg/Library/PL011UartLib/PL011UartLib.inf',
             'SerialPortLib|Silicon/$(SILICON_PKG_NAME)/Library/SerialPortLib/SerialPortLib.inf'
         ]
         return dsc_libs
@@ -191,17 +192,6 @@ class Board(BaseBoard):
 
     def GetContainerList (self):
         container_list = []
-        container_list.append ([
-          # Name       | Image File |    CompressAlg  | AuthType             | Key File                      | Region Align | Region Size
-          # ============================================================================================================================================
-          ('IPFW',      'SIIPFW.bin',    '',           'RSA2048_SHA2_256',   'TestSigningPrivateKey.pem',    0,             0     ),   # Container Header
-          ('TST1',      '',              'Dummy',      '',                   '',                             0,             0x2000),   # Component 1
-          ('TST2',      '',              'Lz4',        '',                   '',                             0,             0x3000),   # Component 2
-          ('TST3',      '',              'Lz4',        'RSA2048_SHA2_256',   'TestSigningPrivateKey.pem',    0,             0x3000),   # Component 3
-          ('TST4',      '',              'Lzma',       'SHA2_256',           '',                             0,             0x3000),   # Component 4
-          ('TST5',      '',              'Dummy',      'RSA2048_SHA2_256',   'TestSigningPrivateKey.pem',    0,             0x3000),   # Component 5
-          ('TST6',      '',              '',           '',                   '',                             0,             0x1000),   # Component 6
-        ])
         return container_list
 
     def GetImageLayout (self):

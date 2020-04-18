@@ -9,6 +9,7 @@
 #include <IndustryStandard/UefiTcgPlatform.h>
 #include <Tpm2CommandLib.h>
 #include <Tpm2DeviceLib.h>
+#include <TpmLibInternal.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/BaseLib.h>
 #include <Library/DebugLib.h>
@@ -372,7 +373,7 @@ GetRandomBytes (
 
   if (TotalBlocks != 0) {
     while( CurBlocks < TotalBlocks) {
-      if (AsmRdRand32 (&Rand32)) {
+      if (ReadRand32 (&Rand32)) {
         CopyMem(Buffer + (CurBlocks*sizeof(Rand32)), (UINT8*)&Rand32, sizeof(Rand32));
       } else {
         goto err;
@@ -384,7 +385,7 @@ GetRandomBytes (
 
   RemainingBytes = Len - (CurBlocks * sizeof(Rand32));
   if (RemainingBytes != 0) {
-    if (AsmRdRand32 (&Rand32)){
+    if (ReadRand32 (&Rand32)){
       CopyMem(Buffer + (CurBlocks*sizeof(Rand32)), (UINT8*)&Rand32, RemainingBytes);
     } else {
       goto err;

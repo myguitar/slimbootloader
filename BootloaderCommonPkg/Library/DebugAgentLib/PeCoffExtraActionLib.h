@@ -43,7 +43,7 @@ extern UINTN  AsmInterruptHandle;
 **/
 BOOLEAN
 CheckDebugAgentHandler (
-  IN  IA32_DESCRIPTOR            *IdtDescriptor,
+  IN  VOID                       *IdtDescriptor,
   IN  UINTN                      InterruptType
   );
 
@@ -56,8 +56,8 @@ CheckDebugAgentHandler (
 **/
 VOID
 SaveAndUpdateIdtEntry1 (
-  IN  IA32_DESCRIPTOR            *IdtDescriptor,
-  OUT IA32_IDT_GATE_DESCRIPTOR   *SavedIdtEntry
+  IN  VOID                       *IdtDescriptor,
+  OUT VOID                       *SavedIdtEntry
   );
 
 /**
@@ -69,8 +69,8 @@ SaveAndUpdateIdtEntry1 (
 **/
 VOID
 RestoreIdtEntry1 (
-  IN  IA32_DESCRIPTOR            *IdtDescriptor,
-  IN  IA32_IDT_GATE_DESCRIPTOR   *RestoredIdtEntry
+  IN  VOID                       *IdtDescriptor,
+  IN  VOID                       *RestoredIdtEntry
   );
 
 #endif

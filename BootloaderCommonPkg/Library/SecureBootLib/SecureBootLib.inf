@@ -39,4 +39,6 @@
   CryptoLib
   BootloaderCommonLib
   BootloaderLib
+
+[LibraryClasses.IA32]
   RngLib

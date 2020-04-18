@@ -1,6 +1,6 @@
 ## @file
 #
-#  Copyright (c) 2016 - 2017, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2016 - 2020, Intel Corporation. All rights reserved.<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -17,12 +17,15 @@
 #
 # The following information is for reference only and not required by the build tools.
 #
-# VALID_ARCHITECTURES = IA32 X64 IPF EBC
+# VALID_ARCHITECTURES = IA32 X64 ARM
 #
 
 [Sources]
   Stage1B.h
   Stage1B.c
+
+[Sources.ARM]
+  Arm/Stage1BArch.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -30,8 +33,10 @@
   BootloaderCommonPkg/BootloaderCommonPkg.dec
   IntelFsp2Pkg/IntelFsp2Pkg.dec
 
+[Packages.ARM]
+  ArmPkg/ArmPkg.dec
+
 [LibraryClasses]
-  PagingLib
   ModuleEntryLib
   BaseLib
   IoLib
@@ -40,12 +45,10 @@
   SocInitLib
   BoardInitLib
   LoaderLib
-  FspSupportLib
   MemoryAllocationLib
   LoaderPerformanceLib
   SecureBootLib
   TimeStampLib
-  FspApiLib
   LitePeCoffLib
   DebugDataLib
   ConfigDataLib
@@ -55,6 +58,16 @@
   DebugAgentLib
   ContainerLib
   StageLib
+
+[LibraryClasses.IA32, LibraryClasses.X64]
+  FspSupportLib
+  FspApiLib
+  PagingLib
+
+[LibraryClasses.ARM]
+  HobBuildLib
+  CacheMaintenanceLib
+  ArmMmuLib
 
 [Guids]
   gPlatformModuleTokenSpaceGuid
@@ -98,6 +111,12 @@
   gPlatformModuleTokenSpaceGuid.PcdPayloadReservedMemSize
   gPlatformModuleTokenSpaceGuid.PcdLoaderAcpiNvsSize
   gPlatformModuleTokenSpaceGuid.PcdLoaderAcpiReclaimSize
+  gPlatformModuleTokenSpaceGuid.PcdFSPEnabled
+
+[Pcd.ARM]
+  gArmTokenSpaceGuid.PcdSystemMemoryBase
+  gArmTokenSpaceGuid.PcdSystemMemorySize
+  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryMapTableBase
 
 [Depex]
   TRUE

@@ -123,7 +123,7 @@ ShellCommandPciFunc (
     MmRead (Addr, 4, 64, FALSE);
   } else {
     // Scan PCI config space and report present BDFs
-    for (Bus = 0; Bus <= PCI_MAX_BUS; Bus++) {
+    for (Bus = 0; Bus <= 0xf/*PCI_MAX_BUS*/; Bus++) {
       for (Dev = 0; Dev <= PCI_MAX_DEVICE; Dev++) {
         for (Func = 0; Func <= PCI_MAX_FUNC; Func++) {
           // Calculate MMIO address of PCI device configuration space

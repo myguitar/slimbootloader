@@ -27,6 +27,9 @@
 [Sources.X64]
   X64/CpuSupport.nasm
 
+[Sources.ARM]
+  Arm/CpuSupport.S
+
 [Packages]
   MdePkg/MdePkg.dec
 

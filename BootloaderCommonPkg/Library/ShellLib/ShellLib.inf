@@ -19,6 +19,12 @@
 #  VALID_ARCHITECTURES           = IA32 X64 IPF
 #
 
+[Sources.IA32]
+  CmdCpuid.c
+  CmdMsr.c
+  CmdMtrr.c
+  CmdUcode.c
+
 [Sources]
   Shell.h
   ShellCmds.h
@@ -26,7 +32,6 @@
   CmdPciUtil.h
   Parsing.h
   CmdBoot.c
-  CmdCpuid.c
   CmdDmesg.c
   CmdExit.c
   CmdHelp.c
@@ -34,13 +39,10 @@
   CmdMm.c
   CmdMmap.c
   CmdMmcDll.c
-  CmdMsr.c
-  CmdMtrr.c
   CmdPci.c
   CmdPciUtil.c
   CmdPerf.c
   CmdReset.c
-  CmdUcode.c
   CmdCdata.c
   CmdCls.c
   CmdFs.c
@@ -74,6 +76,8 @@
   FileSystemLib
   PartitionLib
   ShellExtensionLib
+
+[LibraryClasses.IA32, LibraryClasses.X64]
   MtrrLib
 
 [Pcd]

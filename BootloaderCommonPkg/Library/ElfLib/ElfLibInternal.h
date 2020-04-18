@@ -16,7 +16,7 @@
 #include "Elf32.h"
 #include "Elf64.h"
 
-#if defined (MDE_CPU_IA32)
+#if defined (MDE_CPU_IA32) || defined (MDE_CPU_ARM)
 
 typedef Elf32_Shdr      Elf_Shdr;
 typedef Elf32_Ehdr      Elf_Ehdr;
@@ -27,7 +27,6 @@ typedef Elf32_Dyn       Elf_Dyn;
 #define ELFCLASS        ELFCLASS32
 #define ELF_R_TYPE(r)   ELF32_R_TYPE(r)
 #define ELF_R_SYM(r)    ELF32_R_SYM(r)
-#define ELF_EM          EM_386
 
 #elif defined (MDE_CPU_X64)
 
@@ -42,8 +41,17 @@ typedef Elf64_Dyn       Elf_Dyn;
 #define ELFCLASS        ELFCLASS64
 #define ELF_R_TYPE(r)   ELF64_R_TYPE(r)
 #define ELF_R_SYM(r)    ELF64_R_SYM(r)
-#define ELF_EM          EM_X86_64
 
+#else
+#error Unknown Processor Type
+#endif
+
+#if defined (MDE_CPU_IA32)
+#define ELF_EM          EM_386
+#elif defined (MDE_CPU_X64)
+#define ELF_EM          EM_X86_64
+#elif defined (MDE_CPU_ARM)
+#define ELF_EM          EM_ARM
 #else
 #error Unknown Processor Type
 #endif

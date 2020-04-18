@@ -196,6 +196,12 @@ IsBzImage (
   IN  CONST VOID             *ImageBase
   );
 
+BOOLEAN
+EFIAPI
+IsZImage (
+  IN  CONST VOID             *ImageBase
+  );
+
 /**
   Load linux kernel image to specified address and setup boot parameters.
 
@@ -213,6 +219,7 @@ EFI_STATUS
 EFIAPI
 LoadBzImage (
   IN  CONST VOID                  *KernelBase,
+  IN      UINT32                   KernelLen,
   IN  CONST VOID                  *InitRdBase,
   IN      UINT32                   InitRdLen,
   IN  CONST VOID                  *CmdLineBase,

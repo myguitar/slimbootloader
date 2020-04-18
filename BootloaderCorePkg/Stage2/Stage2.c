@@ -200,7 +200,7 @@ NormalBootPath (
           CmdLine[CmdLineLen] = OrgVal;
         }
         PldEntry = (PAYLOAD_ENTRY)(UINTN)LinuxBoot;
-        Status   = LoadBzImage (Dst, InitRd, InitRdLen, CmdLine, CmdLineLen);
+        Status   = LoadBzImage (Dst, 0, InitRd, InitRdLen, CmdLine, CmdLineLen);
       }
     }
 
@@ -371,28 +371,30 @@ SecStartup (
 
   InitializeDebugAgent (DEBUG_AGENT_INIT_DXE_LOAD, NULL, NULL);
 
-  // Call FspSiliconInit
-  BoardInit (PreSiliconInit);
+  if (PcdGet32 (PcdFSPSSize) > 0) {
+    // Call FspSiliconInit
+    BoardInit (PreSiliconInit);
 
-  AddMeasurePoint (0x3010);
+    AddMeasurePoint (0x3010);
 
-  // Save NVS data
-  NvsData = GetFspNvsDataBuffer (LdrGlobal->FspHobList, &MrcDataLen);
-  if ((NvsData != NULL) && (MrcDataLen > 0)) {
-    DEBUG ((DEBUG_INFO, "Save MRC Training Data (0x%p 0x%06X) ... ", NvsData, MrcDataLen));
-    SubStatus = SaveNvsData (NvsData, MrcDataLen);
-    DEBUG ((DEBUG_INFO, "%X\n", SubStatus));
+    // Save NVS data
+    NvsData = GetFspNvsDataBuffer (LdrGlobal->FspHobList, &MrcDataLen);
+    if ((NvsData != NULL) && (MrcDataLen > 0)) {
+      DEBUG ((DEBUG_INFO, "Save MRC Training Data (0x%p 0x%06X) ... ", NvsData, MrcDataLen));
+      SubStatus = SaveNvsData (NvsData, MrcDataLen);
+      DEBUG ((DEBUG_INFO, "%X\n", SubStatus));
+    }
+
+    DEBUG ((DEBUG_INIT, "Silicon Init\n"));
+    AddMeasurePoint (0x3020);
+    Status = CallFspSiliconInit ();
+    AddMeasurePoint (0x3030);
+    FspResetHandler (Status);
+    ASSERT_EFI_ERROR (Status);
+
+    BoardInit (PostSiliconInit);
+    AddMeasurePoint (0x3040);
   }
-
-  DEBUG ((DEBUG_INIT, "Silicon Init\n"));
-  AddMeasurePoint (0x3020);
-  Status = CallFspSiliconInit ();
-  AddMeasurePoint (0x3030);
-  FspResetHandler (Status);
-  ASSERT_EFI_ERROR (Status);
-
-  BoardInit (PostSiliconInit);
-  AddMeasurePoint (0x3040);
 
   // Create base HOB
   BuildBaseInfoHob (Stage2Param);
@@ -434,10 +436,12 @@ SecStartup (
     BoardInit (PostPciEnumeration);
     AddMeasurePoint (0x30B0);
 
-    if (!EFI_ERROR (Status)) {
-      if (BootMode != BOOT_ON_FLASH_UPDATE) {
-        BoardNotifyPhase (PostPciEnumeration);
-        AddMeasurePoint (0x30C0);
+    if (PcdGet32 (PcdFSPSSize) > 0) {
+      if (!EFI_ERROR (Status)) {
+        if (BootMode != BOOT_ON_FLASH_UPDATE) {
+          BoardNotifyPhase (PostPciEnumeration);
+          AddMeasurePoint (0x30C0);
+        }
       }
     }
 

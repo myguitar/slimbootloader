@@ -40,7 +40,7 @@ LoadIdt (
 VOID
 LoadGdt (
   IN STAGE_GDT_TABLE   *GdtTable,
-  IN IA32_DESCRIPTOR   *GdtrPtr
+  IN ARCH_DESCRIPTOR   *GdtrPtr
   );
 
 

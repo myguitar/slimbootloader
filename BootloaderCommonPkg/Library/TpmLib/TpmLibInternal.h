@@ -55,5 +55,10 @@ TpmLibSetEventLogData (
   IN UINT32 Laml
   );
 
+BOOLEAN
+EFIAPI
+ReadRand32 (
+  OUT     UINT32                    *Rand
+  );
 
 #endif  //_TPM_LIB_INTERNAL_H

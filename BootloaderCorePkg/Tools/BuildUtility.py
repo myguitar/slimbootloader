@@ -299,9 +299,11 @@ def get_fsp_upd_size (path):
 
 
 def get_fsp_revision (path):
-    di = open(path,'rb').read()[0xA0:0xA4]
-    return struct.unpack('I', di)[0]
-
+    try:
+        di = open(path,'rb').read()[0xA0:0xA4]
+        return struct.unpack('I', di)[0]
+    except:
+        return 0
 
 def get_fsp_image_id (path):
     di = open(path,'rb').read()[0xA4:0xAC]
@@ -951,7 +953,7 @@ def rebase_fv (fv, out_bin, delta):
     print("Patched %d entries in %d TE/PE32 images." % (pcount, fcount))
 
 
-def decode_flash_map (flash_map_file, print_address = True):
+def decode_flash_map (flash_layout_topdown, flash_layout_start, flash_map_file, print_address = True):
 
     if not os.path.exists(flash_map_file):
         raise Exception("No layout file '%s' found !" % flash_map_file)
@@ -965,7 +967,10 @@ def decode_flash_map (flash_map_file, print_address = True):
     entry_num = (flash_map.length - sizeof(FLASH_MAP)) // sizeof(FLASH_MAP_DESC)
 
     image_size = flash_map.romsize
-    image_base = 0x100000000 - image_size
+    if flash_layout_topdown:
+        image_base = flash_layout_start - image_size
+    else:
+        image_base = flash_layout_start
 
     flash_map_lines = [
             "\nFlash Map Information:\n" \
@@ -1029,6 +1034,7 @@ def find_component_in_image_list (comp_name, img_list):
 
 def print_component_list (comp_list):
     for comp in comp_list:
+        print('%-20s BASE=0x%08X SIZE=0x%08X' % (comp['name'], comp['base'], comp['size']))
         print('%-20s BASE=0x%08X' % (comp['name'], comp['base']))
 
 def gen_pci_enum_policy_info (policy_dict):

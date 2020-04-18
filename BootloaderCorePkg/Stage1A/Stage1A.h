@@ -49,4 +49,14 @@ ContinueFunc (
   IN VOID  *Params
   );
 
+/**
+  Get Arch Descriptor
+
+  @retval      Arch Descriptor Pointer
+**/
+ARCH_DESCRIPTOR *
+GetArchDescriptor (
+  VOID
+  );
+
 #endif

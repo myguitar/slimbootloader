@@ -27,31 +27,6 @@ CONST DEBUG_LOG_BUFFER_HEADER mLogBufHdrTmpl = {
   FixedPcdGet32 (PcdEarlyLogBufferSize)
 };
 
-//
-// Global Descriptor Table (GDT)
-//
-STATIC
-CONST IA32_SEGMENT_DESCRIPTOR
-mGdtEntries[STAGE_GDT_ENTRY_COUNT] = {
-  /* selector { Global Segment Descriptor                              } */
-  /* 0x00 */  {{0,      0,  0,  0,    0,  0,  0,  0,    0,  0, 0,  0,  0}}, //null descriptor
-  /* 0x08 */  {{0xffff, 0,  0,  0x2,  1,  0,  1,  0xf,  0,  0, 1,  1,  0}}, //linear data segment descriptor
-  /* 0x10 */  {{0xffff, 0,  0,  0xb,  1,  0,  1,  0xf,  0,  0, 1,  1,  0}}, //linear code segment descriptor
-  /* 0x18 */  {{0xffff, 0,  0,  0x3,  1,  0,  1,  0xf,  0,  0, 1,  1,  0}}, //system data segment descriptor
-  /* 0x20 */  {{0xffff, 0,  0,  0xb,  1,  0,  1,  0xf,  0,  1, 0,  1,  0}}, //linear code (64-bit) segment descriptor
-  /* 0x28 */  {{0xffff, 0,  0,  0xb,  1,  0,  1,  0x0,  0,  0, 0,  0,  0}}, //16-bit code segment descriptor
-  /* 0x30 */  {{0xffff, 0,  0,  0x2,  1,  0,  1,  0x0,  0,  0, 0,  0,  0}}, //16-bit data segment descriptor
-};
-
-//
-// IA32 Gdt register
-//
-STATIC
-CONST IA32_DESCRIPTOR mGdt = {
-  sizeof (mGdtEntries) - 1,
-  (UINTN) mGdtEntries
-  };
-
 /**
   Get flash map info.
 
@@ -285,14 +260,17 @@ SecStartup2 (
   BufInfo->SrcBase   = (VOID *)(UINTN)PcdGet32 (PcdVerInfoBase);
   BufInfo->AllocLen  = sizeof (BOOT_LOADER_VERSION);
   BufInfo->DstBase   = &LdrGlobal->VerInfoPtr;
+  DumpHex (2, 0, sizeof (BOOT_LOADER_VERSION), BufInfo->SrcBase);
 
   // Hash Store
-  BufInfo = &Stage1aParam.BufInfo[EnumBufHashStore];
-  HashStoreTable     = (HASH_STORE_TABLE *)(UINTN)PcdGet32 (PcdHashStoreBase);
-  BufInfo->SrcBase   = HashStoreTable;
-  BufInfo->AllocLen  = PcdGet32 (PcdHashStoreSize);
-  BufInfo->CopyLen   = HashStoreTable->UsedLength;
-  BufInfo->DstBase   = &LdrGlobal->HashStorePtr;
+  if (FeaturePcdGet (PcdVerifiedBootEnabled)) {
+    BufInfo = &Stage1aParam.BufInfo[EnumBufHashStore];
+    HashStoreTable     = (HASH_STORE_TABLE *)(UINTN)PcdGet32 (PcdHashStoreBase);
+    BufInfo->SrcBase   = HashStoreTable;
+    BufInfo->AllocLen  = PcdGet32 (PcdHashStoreSize);
+    BufInfo->CopyLen   = HashStoreTable->UsedLength;
+    BufInfo->DstBase   = &LdrGlobal->HashStorePtr;
+  }
 
   // Library Data
   BufInfo = &Stage1aParam.BufInfo[EnumBufLibData];
@@ -389,6 +367,7 @@ SecStartup2 (
   if (Stage1aParam.AllocDataLen == 0) {
     CpuHalt ("Insufficant memory pool!\n");
   }
+  DumpHex (2, 0, sizeof (STAGE1A_ASM_PARAM), Stage1aAsmParam);
 
   // Enable more CPU featurs
   AsmEnableAvx ();
@@ -470,7 +449,7 @@ SecStartup (
   // the config data passed in or these defaults remain
   LdrGlobal->LdrFeatures           = FEATURE_MEASURED_BOOT | FEATURE_ACPI;
 
-  LoadGdt (&GdtTable, (IA32_DESCRIPTOR *)&mGdt);
+  LoadGdt (&GdtTable, GetArchDescriptor ());
   LoadIdt (&IdtTable, (UINT32)(UINTN)LdrGlobal);
   SetLoaderGlobalDataPointer (LdrGlobal);
 
@@ -516,7 +495,7 @@ ContinueFunc (
 
   // Print version info and
   VerInfoTbl = (BOOT_LOADER_VERSION *)LdrGlobal->VerInfoPtr;
-  ImageId[8] = 0;
+  ImageId[8] = '\0';
   CopyMem (ImageId, &VerInfoTbl->ImageId, sizeof (UINT64));
   DEBUG ((DEBUG_INIT,  "SBID: %a\n"
           "ISVN: %03d\n"
@@ -529,7 +508,7 @@ ContinueFunc (
           VerInfoTbl->ImageVersion.ProjMinorVersion,
           VerInfoTbl->ImageVersion.BuildNumber));
 
-  DEBUG ((DEBUG_INFO,  "SVER: %016lX%a\n"
+  DEBUG ((DEBUG_INFO,  "SVER: %16lX%a\n"
           "FDBG: BLD(%c %a) FSP(%c)\n",
           VerInfoTbl->SourceVersion,
           VerInfoTbl->ImageVersion.Dirty ? "-dirty" : "",
@@ -538,9 +517,11 @@ ContinueFunc (
           VerInfoTbl->ImageVersion.FspDebug ? 'D' : 'R'));
 
   // Print FSP version
-  FspInfoHdr = (FSP_INFO_HEADER *)(UINTN)(PcdGet32 (PcdFSPTBase) + FSP_INFO_HEADER_OFF);
-  CopyMem (ImageId, &FspInfoHdr->ImageId, sizeof (UINT64));
-  DEBUG ((DEBUG_INFO, "FSPV: ID(%a) REV(%08X)\n", ImageId, FspInfoHdr->ImageRevision));
+  if (FixedPcdGetBool (PcdFSPEnabled)) {
+    FspInfoHdr = (FSP_INFO_HEADER *)(UINTN)(PcdGet32 (PcdFSPTBase) + FSP_INFO_HEADER_OFF);
+    CopyMem (ImageId, &FspInfoHdr->ImageId, sizeof (UINT64));
+    DEBUG ((DEBUG_INFO, "FSPV: ID(%a) REV(%08X)\n", ImageId, FspInfoHdr->ImageRevision));
+  }
 
   DEBUG ((DEBUG_INFO, "Loader global data @ 0x%08X\n", (UINT32)(UINTN)LdrGlobal));
   DEBUG ((DEBUG_INFO, "Run  STAGE1A @ 0x%08X\n", PcdGet32 (PcdStage1ALoadBase)));

@@ -24,11 +24,13 @@
 
 [Packages]
   MdePkg/MdePkg.dec
+  BootloaderCorePkg/BootloaderCorePkg.dec
   BootloaderCommonPkg/BootloaderCommonPkg.dec
 
 [Pcd]
   gPlatformCommonLibTokenSpaceGuid.PcdMaxLibraryDataEntry
   gPlatformCommonLibTokenSpaceGuid.PcdDebugOutputDeviceMask
+  gPlatformModuleTokenSpaceGuid.PcdFlashBaseAddress
 
 [LibraryClasses]
   BaseLib

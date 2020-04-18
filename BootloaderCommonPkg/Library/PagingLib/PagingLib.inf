@@ -17,7 +17,7 @@
 #  VALID_ARCHITECTURES           = IA32 X64 IPF EBC ARM ARC
 #
 
-[Sources]
+[Sources.IA32, Sources.X64]
   PagingLib.c
   PagingMap.c
   Paging32To64.c

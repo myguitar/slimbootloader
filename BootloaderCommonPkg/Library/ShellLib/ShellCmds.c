@@ -30,10 +30,10 @@ LoadShellCommands (
   ShellCommandRegister (Shell, &ShellCommandExit);
   ShellCommandRegister (Shell, &ShellCommandHelp);
   ShellCommandRegister (Shell, &ShellCommandMm);
-  ShellCommandRegister (Shell, &ShellCommandCpuid);
-  ShellCommandRegister (Shell, &ShellCommandMsr);
-  ShellCommandRegister (Shell, &ShellCommandMtrr);
-  ShellCommandRegister (Shell, &ShellCommandUcode);
+//  ShellCommandRegister (Shell, &ShellCommandCpuid);
+//  ShellCommandRegister (Shell, &ShellCommandMsr);
+//  ShellCommandRegister (Shell, &ShellCommandMtrr);
+//  ShellCommandRegister (Shell, &ShellCommandUcode);
   ShellCommandRegister (Shell, &ShellCommandCls);
 
   if (!FeaturePcdGet (PcdMiniShellEnabled)) {

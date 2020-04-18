@@ -97,7 +97,9 @@ PrepareStage2 (
     PeCoffRelocateImage (StageHdr->Base);
 
     // Fix FSP-S Base Address
-    RebaseFspComponent (Delta);
+    if (FixedPcdGetBool (PcdFSPEnabled)) {
+      RebaseFspComponent (Delta);
+    }
 
     AddMeasurePoint (0x20D0);
   }
@@ -341,8 +343,8 @@ SecStartup2 (
   STAGE1A_PARAM            *Stage1aParam;
   LOADER_GLOBAL_DATA       *LdrGlobal;
   LOADER_GLOBAL_DATA       *OldLdrGlobal;
-  UINT32                    FspReservedMemBase;
-  UINT64                    FspReservedMemSize;
+  UINTN                     ArchReservedMemBase;
+  UINTN                     ArchReservedMemSize;
   STAGE1B_PARAM             Stage1bParam;
   STAGE1B_PARAM            *Stage1bParamInMem;
   UINT32                    StackTop;
@@ -427,22 +429,19 @@ SecStartup2 (
   HobList = NULL;
   DEBUG ((DEBUG_INIT, "Memory Init\n"));
   AddMeasurePoint (0x2020);
-  Status = CallFspMemoryInit (PCD_GET32_WITH_ADJUST (PcdFSPMBase), &HobList);
+
+  Status = MemoryInit (&HobList);
   AddMeasurePoint (0x2030);
-  FspResetHandler (Status);
   ASSERT_EFI_ERROR (Status);
 
-  FspReservedMemBase = (UINT32)GetFspReservedMemoryFromGuid (
-                         HobList,
-                         &FspReservedMemSize,
-                         &gFspReservedMemoryResourceHobGuid
-                         );
-  ASSERT (FspReservedMemBase > 0);
+  Status = GetArchReservedMemory (HobList, &ArchReservedMemBase,
+                                  &ArchReservedMemSize);
+  ASSERT (ArchReservedMemBase > 0);
 
   // Prepare Global Data structure
   OldLdrGlobal   = LdrGlobal;
-  MemPoolStart   = FspReservedMemBase - PcdGet32 (PcdLoaderReservedMemSize);
-  MemPoolEnd     = FspReservedMemBase - PcdGet32 (PcdLoaderHobStackSize);
+  MemPoolStart   = (UINT32)ArchReservedMemBase - PcdGet32 (PcdLoaderReservedMemSize);
+  MemPoolEnd     = (UINT32)ArchReservedMemBase - PcdGet32 (PcdLoaderHobStackSize);
   MemPoolCurrTop = ALIGN_DOWN (MemPoolEnd - sizeof (LOADER_GLOBAL_DATA), 0x10);
   LdrGlobal      = (LOADER_GLOBAL_DATA *)(UINTN)MemPoolCurrTop;
   MemPoolCurrTop = ALIGN_DOWN (MemPoolCurrTop - sizeof (STAGE_IDT_TABLE), 0x10);
@@ -457,12 +456,12 @@ SecStartup2 (
 
   LdrGlobal->FspHobList        = HobList;
   LdrGlobal->LdrHobList        = NULL;
-  LdrGlobal->StackTop          = FspReservedMemBase;
+  LdrGlobal->StackTop          = (UINT32)ArchReservedMemBase;
   LdrGlobal->MemPoolEnd        = MemPoolEnd;
   LdrGlobal->MemPoolStart      = MemPoolStart;
   LdrGlobal->MemPoolCurrTop    = MemPoolCurrTop;
   LdrGlobal->MemPoolCurrBottom = MemPoolStart;
-  LdrGlobal->MemUsableTop      = (UINT32)(FspReservedMemBase + FspReservedMemSize);
+  LdrGlobal->MemUsableTop      = (UINT32)(ArchReservedMemBase + ArchReservedMemSize);
 
   if (FeaturePcdGet (PcdDmaProtectionEnabled)) {
     DmaBuffer = MemPoolStart - (PcdGet32 (PcdLoaderAcpiNvsSize) + PcdGet32 (PcdLoaderAcpiReclaimSize)
@@ -667,12 +666,14 @@ ContinueFunc (
   DEBUG_CODE_END ();
 
   AddMeasurePoint (0x2050);
-  Status = CallFspTempRamExit (PCD_GET32_WITH_ADJUST (PcdFSPMBase), NULL);
-  AddMeasurePoint (0x2060);
-  ASSERT_EFI_ERROR (Status);
+  if (FixedPcdGetBool (PcdFSPEnabled)) {
+    Status = CallFspTempRamExit (PCD_GET32_WITH_ADJUST (PcdFSPMBase), NULL);
+    AddMeasurePoint (0x2060);
+    ASSERT_EFI_ERROR (Status);
 
-  BoardInit (PostTempRamExit);
-  AddMeasurePoint (0x2070);
+    BoardInit (PostTempRamExit);
+    AddMeasurePoint (0x2070);
+  }
 
   if (MEASURED_BOOT_ENABLED()) {
     if (GetBootMode() != BOOT_ON_S3_RESUME) {

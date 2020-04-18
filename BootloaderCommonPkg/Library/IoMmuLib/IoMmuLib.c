@@ -276,7 +276,9 @@ BlIoMmuFreeBuffer (
   IN  VOID                                     *HostAddress
   )
 {
-  FreePages (HostAddress, Pages);
+  if ((HostAddress != NULL) && (Pages != 0)) {
+    FreePages (HostAddress, Pages);
+  }
   return EFI_SUCCESS;
 }
 
@@ -485,7 +487,9 @@ IoMmuFreeBuffer (
     Status = BlIoMmuUnmap (mIoMmu, Mapping);
     Status = BlIoMmuFreeBuffer (mIoMmu, Pages, HostAddress);
   } else {
-    FreePages (HostAddress, Pages);
+    if ((HostAddress != NULL) && (Pages != 0)) {
+      FreePages (HostAddress, Pages);
+    }
     Status = EFI_SUCCESS;
   }
   return Status;

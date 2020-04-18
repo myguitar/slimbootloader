@@ -17,7 +17,7 @@
   PLATFORM_VERSION                    = 0.1
   DSC_SPECIFICATION                   = 0x00010005
   OUTPUT_DIRECTORY                    = Build/BootloaderCorePkg
-  SUPPORTED_ARCHITECTURES             = IA32|X64
+  SUPPORTED_ARCHITECTURES             = IA32|X64|ARM
   BUILD_TARGETS                       = DEBUG|RELEASE|NOOPT
   SKUID_IDENTIFIER                    = DEFAULT
   FLASH_DEFINITION                    = BootloaderCorePkg/BootloaderCorePkg.fdf
@@ -46,7 +46,6 @@
   PciExpressLib|MdePkg/Library/BasePciExpressLib/BasePciExpressLib.inf
   DebugPrintErrorLevelLib|BootloaderCorePkg/Library/DebugPrintErrorLevelLib/DebugPrintErrorLevelLib.inf
   PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
-  BaseMemoryLib|MdePkg/Library/BaseMemoryLibSse2/BaseMemoryLibSse2.inf
   SynchronizationLib|MdePkg/Library/BaseSynchronizationLib/BaseSynchronizationLib.inf
   TimeStampLib|BootloaderCommonPkg/Library/TimeStampLib/TimeStampLib.inf
   ExtraBaseLib|BootloaderCommonPkg/Library/ExtraBaseLib/ExtraBaseLib.inf
@@ -117,7 +116,6 @@
   SerialPortLib|BootloaderCommonPkg/Library/SerialPortLib/SerialPortLib.inf
   SortLib|BootloaderCommonPkg/Library/SortLib/SortLib.inf
   IoMmuLib|BootloaderCommonPkg/Library/IoMmuLib/IoMmuLib.inf
-  MtrrLib|BootloaderCommonPkg/Library/MtrrLib/MtrrLib.inf
 
 !if $(ENABLE_SOURCE_DEBUG)
   DebugAgentLib|BootloaderCommonPkg/Library/DebugAgentLib/DebugAgentLib.inf
@@ -127,8 +125,19 @@
   ElfLib|BootloaderCommonPkg/Library/ElfLib/ElfLib.inf
   S3SaveRestoreLib|BootloaderCorePkg/Library/S3SaveRestoreLib/S3SaveRestoreLib.inf
   BoardSupportLib|Platform/CommonBoardPkg/Library/BoardSupportLib/BoardSupportLib.inf
-  PagingLib|BootloaderCommonPkg/Library/PagingLib/PagingLib.inf
   TimerLib|BootloaderCommonPkg/Library/AcpiTimerLib/AcpiTimerLib.inf
+
+[LibraryClasses.IA32, LibraryClasses.X64]
+  PagingLib|BootloaderCommonPkg/Library/PagingLib/PagingLib.inf
+  BaseMemoryLib|MdePkg/Library/BaseMemoryLibSse2/BaseMemoryLibSse2.inf
+  MtrrLib|BootloaderCommonPkg/Library/MtrrLib/MtrrLib.inf
+
+[LibraryClasses.ARM]
+  BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
+  CacheMaintenanceLib|ArmPkg/Library/ArmCacheMaintenanceLib/ArmCacheMaintenanceLib.inf
+  ArmMmuLib|ArmPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
+  TimerLib|ArmPkg/Library/ArmArchTimerLib/ArmArchTimerLib.inf
+  NULL|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
 ################################################################################
 #
@@ -214,6 +223,7 @@
   gPlatformModuleTokenSpaceGuid.PcdFSPMUpdSize            | $(FSP_M_UPD_SIZE)
   gPlatformModuleTokenSpaceGuid.PcdFSPSSize               | $(FSP_S_SIZE)
   gPlatformModuleTokenSpaceGuid.PcdFSPSUpdSize            | $(FSP_S_UPD_SIZE)
+  gPlatformModuleTokenSpaceGuid.PcdFSPEnabled             | $(HAVE_FSP_BIN)
 
   gPlatformModuleTokenSpaceGuid.PcdTopSwapRegionSize      | $(TOP_SWAP_SIZE)
   gPlatformModuleTokenSpaceGuid.PcdRedundantRegionSize    | $(REDUNDANT_SIZE)
@@ -313,6 +323,19 @@
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut         | 2
   gPlatformCommonLibTokenSpaceGuid.PcdMeasuredBootHashMask | 0x00000002
 
+[PcdsFixedAtBuild.ARM]
+  gArmPlatformTokenSpaceGuid.PcdCPUCoresStackBase         | $(CPU_CORES_STACK_BASE)
+  gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize   | $(CPU_CORE_PRIMARY_STACK_SIZE)
+
+[PcdsPatchableInModule.ARM]
+!ifdef $(SYSTEM_MEMORY_BASE)
+  gArmTokenSpaceGuid.PcdSystemMemoryBase                  | $(SYSTEM_MEMORY_BASE)
+!endif
+!ifdef $(SYSTEM_MEMORY_SIZE)
+  gArmTokenSpaceGuid.PcdSystemMemorySize                  | $(SYSTEM_MEMORY_SIZE)
+!endif
+  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryMapTableBase | 0x00000000
+
 ###############################################################################
 ##
 ## Because of some odd behavior with current EDKII build tools,
@@ -339,8 +362,10 @@
       gPlatformCommonLibTokenSpaceGuid.PcdMinDecompression | TRUE
       gPlatformCommonLibTokenSpaceGuid.PcdForceToInitSerialPort | TRUE
     <LibraryClasses>
+!if $(ARCH) != ARM
       FspApiLib    | BootloaderCorePkg/Library/FspApiLib/FsptApiLib.inf
       BaseMemoryLib| MdePkg/Library/BaseMemoryLibRepStr/BaseMemoryLibRepStr.inf
+!endif
       SocInitLib   | Silicon/$(SILICON_PKG_NAME)/Library/Stage1ASocInitLib/Stage1ASocInitLib.inf
       BoardInitLib | Platform/$(BOARD_PKG_NAME)/Library/Stage1ABoardInitLib/Stage1ABoardInitLib.inf
 !if $(SKIP_STAGE1A_SOURCE_DEBUG)
@@ -350,15 +375,19 @@
 
   BootloaderCorePkg/Stage1B/Stage1B.inf {
     <LibraryClasses>
+!if $(ARCH) != ARM
       FspApiLib    | BootloaderCorePkg/Library/FspApiLib/FspmApiLib.inf
       BaseMemoryLib| MdePkg/Library/BaseMemoryLibRepStr/BaseMemoryLibRepStr.inf
+!endif
       SocInitLib   | Silicon/$(SILICON_PKG_NAME)/Library/Stage1BSocInitLib/Stage1BSocInitLib.inf
       BoardInitLib | Platform/$(BOARD_PKG_NAME)/Library/Stage1BBoardInitLib/Stage1BBoardInitLib.inf
   }
 
   BootloaderCorePkg/Stage2/Stage2.inf {
     <LibraryClasses>
+!if $(ARCH) != ARM
       FspApiLib    | BootloaderCorePkg/Library/FspApiLib/FspsApiLib.inf
+!endif
       SocInitLib   | Silicon/$(SILICON_PKG_NAME)/Library/Stage2SocInitLib/Stage2SocInitLib.inf
       BoardInitLib | Platform/$(BOARD_PKG_NAME)/Library/Stage2BoardInitLib/Stage2BoardInitLib.inf
   }
@@ -389,16 +418,17 @@
   }
 !endif
 
-!if $(BUILD_CSME_UPDATE_DRIVER)
-  PayloadPkg/CsmeUpdateDriver/CsmeUpdateDriver.inf
-!endif
-
 !if $(HAVE_ACPI_TABLE)
   Platform/$(BOARD_PKG_NAME)/AcpiTables/AcpiTables.inf
 !endif
 
+[Components.IA32]
 !if $(UCODE_SIZE) > 0
   Silicon/$(SILICON_PKG_NAME)/Microcode/Microcode.inf
+!endif
+
+!if $(BUILD_CSME_UPDATE_DRIVER)
+  PayloadPkg/CsmeUpdateDriver/CsmeUpdateDriver.inf
 !endif
 
 [BuildOptions.Common.EDKII]
@@ -409,6 +439,7 @@
   *_GCC5_IA32_DLINK_FLAGS = -no-pie
   *_GCC5_IA32_ASLCC_FLAGS = -fno-pic
   *_GCC5_IA32_ASLDLINK_FLAGS = -no-pie
+  *_GCC5_ARM_CC_FLAGS = -fno-stack-protector
   # Force synchronous PDB writes for parallel builds
   *_VS2015x86_IA32_CC_FLAGS = /FS
   *_XCODE5_IA32_CC_FLAGS = -flto

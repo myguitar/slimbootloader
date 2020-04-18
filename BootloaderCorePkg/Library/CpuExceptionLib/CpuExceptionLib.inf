@@ -32,6 +32,9 @@
   X64/CpuExceptionHandler.c
   X64/ExceptionHandler.nasm
 
+[Sources.ARM]
+  Arm/CpuExceptionHandler.c
+
 [Packages]
   MdePkg/MdePkg.dec
   BootloaderCommonPkg/BootloaderCommonPkg.dec
@@ -40,8 +43,10 @@
 [LibraryClasses]
   BaseLib
   DebugLib
-  LocalApicLib
   DebugAgentLib
+
+[LibraryClasses.IA32]
+  LocalApicLib
 
 [Guids]
 

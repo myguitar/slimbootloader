@@ -11,6 +11,16 @@
 #include <Library/CryptoLib.h>
 #include <Guid/FlashMapInfoGuid.h>
 
+#if defined (MDE_CPU_IA32) || defined (MDE_CPU_X64)
+typedef	 IA32_IDT_GATE_DESCRIPTOR     ARCH_IDT_GATE_DESCRIPTOR;
+typedef  IA32_SEGMENT_DESCRIPTOR      ARCH_SEGMENT_DESCRIPTOR;
+typedef  IA32_DESCRIPTOR              ARCH_DESCRIPTOR;
+#else
+typedef	 UINT64                       ARCH_IDT_GATE_DESCRIPTOR;
+typedef  UINT64                       ARCH_SEGMENT_DESCRIPTOR;
+typedef  UINTN                        ARCH_DESCRIPTOR;
+#endif
+
 #define  MPLD_SIGNATURE               SIGNATURE_32 ('$', 'P', 'L', 'D')
 #define  MVBT_SIGNATURE               SIGNATURE_32 ('$', 'M', 'V', 'B')
 #define  IS_MULTI_PAYLOAD(x)          (*(UINT32 *)(x) == MPLD_SIGNATURE)
@@ -50,11 +60,11 @@ typedef enum {
 
 typedef struct {
   UINT64        LdrGlobal;
-  IA32_IDT_GATE_DESCRIPTOR  IdtTable[STAGE_IDT_ENTRY_COUNT];
+  ARCH_IDT_GATE_DESCRIPTOR  IdtTable[STAGE_IDT_ENTRY_COUNT];
 } STAGE_IDT_TABLE;
 
 typedef struct {
-  IA32_SEGMENT_DESCRIPTOR   GdtTable[STAGE_GDT_ENTRY_COUNT];
+  ARCH_SEGMENT_DESCRIPTOR   GdtTable[STAGE_GDT_ENTRY_COUNT];
 } STAGE_GDT_TABLE;
 
 typedef struct {

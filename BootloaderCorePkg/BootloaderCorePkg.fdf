@@ -129,7 +129,9 @@ FV = OsLoader
 
   INF BootloaderCorePkg/Stage1A/Stage1A.inf
 
+!if $(ARCH) != ARM
   INF RuleOverride = RESET_VECTOR USE = $(ARCH) BootloaderCorePkg/Stage1A/Ia32/Vtf0/Bin/ResetVector.inf
+!endif
 
 #------------------------------------------------------------------------------
 # STAGE1B FV

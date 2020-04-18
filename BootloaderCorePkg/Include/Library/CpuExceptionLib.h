@@ -9,6 +9,8 @@
 #ifndef _CPU_EXCEPTION_LIB_H_
 #define _CPU_EXCEPTION_LIB_H_
 
+#include <Library/BootloaderCoreLib.h>
+
 #define  CPU_EXCEPTION_NUM          32
 #define  CPU_INTERRUPT_NUM         256
 
@@ -19,7 +21,6 @@ typedef struct {
   UINTN ExceptionStart;
   UINTN ExceptionStubHeaderSize;
 } EXCEPTION_HANDLER_TEMPLATE_MAP;
-
 
 /**
   Return address map of exception handler template so that C code can generate
@@ -45,7 +46,7 @@ AsmGetTemplateAddressMap (
 **/
 VOID
 UpdateExceptionHandler (
-  IN IA32_DESCRIPTOR         *IdtDescriptor
+  IN ARCH_DESCRIPTOR               *IdtDescriptor
   );
 
 #endif

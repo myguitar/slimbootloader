@@ -98,7 +98,7 @@ PeCoffFindAndReportImageInfo (
 **/
 VOID
 UpdateDebugAgentIdt (
-  IN IA32_DESCRIPTOR       *IdtDescriptor,
+  IN VOID                  *IdtDescriptor,
   IN DEBUG_AGENT_CONTINUE   Function
   );
 

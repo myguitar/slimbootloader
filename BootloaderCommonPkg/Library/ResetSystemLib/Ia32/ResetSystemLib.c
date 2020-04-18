@@ -110,5 +110,3 @@ ResetSystem (
   //
   CpuDeadLoop();
 }
-
-

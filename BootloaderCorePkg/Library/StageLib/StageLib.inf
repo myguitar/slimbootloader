@@ -19,8 +19,11 @@
 #  VALID_ARCHITECTURES           = IA32 X64 IPF
 #
 
-[Sources]
-  StageLib.c
+[Sources.IA32, Sources.X64]
+  Ia32/StageArchLib.c
+
+[Sources.ARM]
+  Arm/StageArchLib.c
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -30,6 +33,8 @@
 [LibraryClasses]
   BaseLib
   DebugLib
+
+[LibraryClasses.IA32, LibraryClasses.X64]
   PagingLib
 
 [Pcd]

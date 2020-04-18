@@ -27,6 +27,9 @@
 [Sources.X64]
   X64/SecEntry.nasm
 
+[Sources.ARM]
+  Arm/SecEntry.S
+
 [Packages]
   MdePkg/MdePkg.dec
   BootloaderCommonPkg/BootloaderCommonPkg.dec

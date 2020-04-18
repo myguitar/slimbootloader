@@ -19,14 +19,20 @@
 #  VALID_ARCHITECTURES           = IA32 X64 IPF
 #
 
-[Sources]
-  TimeStampLib.c
+[Sources.IA32, Sources.X64]
+  Ia32/TimeStampLib.c
+
+[Sources.ARM]
+  Arm/TimeStampLib.c
 
 [Packages]
   MdePkg/MdePkg.dec
 
-[Pcd]
+[Packages.ARM]
+  ArmPkg/ArmPkg.dec
 
+[Pcd]
 
 [LibraryClasses]
   BaseLib
+  TimerLib

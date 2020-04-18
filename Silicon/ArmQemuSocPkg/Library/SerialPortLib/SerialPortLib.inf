@@ -24,8 +24,8 @@
 
 [Packages]
   MdePkg/MdePkg.dec
-  BootloaderCorePkg/BootloaderCorePkg.dec
   BootloaderCommonPkg/BootloaderCommonPkg.dec
+  Silicon/ArmCommonSocPkg/ArmCommonSocPkg.dec
   Silicon/ArmQemuSocPkg/ArmQemuSocPkg.dec
 
 [FixedPcd]

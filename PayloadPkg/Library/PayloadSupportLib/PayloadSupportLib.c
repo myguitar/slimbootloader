@@ -95,7 +95,6 @@ ParseAcpiTableInfo (
   } else {
     Xsdt = NULL;
   }
-  ASSERT (Xsdt != NULL);
   if (Xsdt == NULL) {
     return;
   }
