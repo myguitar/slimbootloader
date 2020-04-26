@@ -22,7 +22,7 @@
 EFI_STATUS
 EFIAPI
 UsbInitCtrl (
-  IN     UINTN                           BaseAddress,
+  IN     UINT32                          BaseAddress,
   IN OUT EFI_HANDLE                     *UsbHostHandle
   );
 
