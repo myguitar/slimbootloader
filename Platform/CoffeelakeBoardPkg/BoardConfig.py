@@ -22,6 +22,8 @@ class Board(BaseBoard):
 
         super(Board, self).__init__(*args, **kwargs)
 
+        self.ENABLE_SMP_INIT = 0
+
         self.VERINFO_IMAGE_ID          = 'SB_CFL'
         self.VERINFO_PROJ_MAJOR_VER    = 1
         self.VERINFO_PROJ_MINOR_VER    = 0

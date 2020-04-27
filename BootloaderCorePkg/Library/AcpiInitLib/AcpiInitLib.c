@@ -716,8 +716,10 @@ FindAcpiWakeVectorAndJump (
   UINT8                                           Index;
   EFI_ACPI_5_0_FIRMWARE_ACPI_CONTROL_STRUCTURE   *Facs;
   EFI_ACPI_5_0_FIXED_ACPI_DESCRIPTION_TABLE      *Facp;
-  UINT32                                          WakeVector;
+  UINTN                                           WakeVector;
   DOWAKEUP                                        DoWake;
+  UINTN                                           TempStackTop;
+  UINTN                                           TempStack[0x10];
 
   Rsdp = (EFI_ACPI_5_0_ROOT_SYSTEM_DESCRIPTION_POINTER *)(UINTN)AcpiTableBase;
   Xsdt = (EFI_ACPI_DESCRIPTION_HEADER *)(UINTN)Rsdp->XsdtAddress;
@@ -729,7 +731,6 @@ FindAcpiWakeVectorAndJump (
       Facp = (EFI_ACPI_5_0_FIXED_ACPI_DESCRIPTION_TABLE *) Hdr;
       Facs = (EFI_ACPI_5_0_FIRMWARE_ACPI_CONTROL_STRUCTURE *)(UINTN)Facp->FirmwareCtrl;
       if (Facs->Signature == EFI_ACPI_5_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_SIGNATURE) {
-        WakeVector = Facs->FirmwareWakingVector;
         // Calculate CRC32 for 0x00000000 ---> BootLoaderRsvdMemBase and
         // compare with the one calculated and saved in Stage1B.
         if (PcdGetBool (PcdS3DebugEnabled)) {
@@ -737,13 +738,41 @@ FindAcpiWakeVectorAndJump (
             return;
           }
         }
-        CopyMem ((VOID *)(UINTN)WakeUpBuffer, &WakeUp, WakeUpSize);
-        DoWake = (DOWAKEUP)(UINTN)WakeUpBuffer;
-        DEBUG ((DEBUG_INIT, "Jump to Wake vector = 0x%x\n", WakeVector));
-        DoWake (WakeVector);
+        DEBUG ((DEBUG_VERBOSE, "WV:0x%X XWV:0x%lX Ver:0x%X F:0x%X OF:0x%X\n",
+          Facs->FirmwareWakingVector, Facs->XFirmwareWakingVector,
+          Facs->Version, Facs->Flags, Facs->OspmFlags));
+        if (Facs->XFirmwareWakingVector != 0) {
+          WakeVector   = (UINTN)Facs->XFirmwareWakingVector;
+          TempStackTop = (UINTN)&TempStack + sizeof(TempStack);
+          if ((Facs->Version == EFI_ACPI_5_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION) &&
+              ((Facs->Flags & EFI_ACPI_5_0_64BIT_WAKE_SUPPORTED_F) != 0) &&
+              ((Facs->OspmFlags & EFI_ACPI_5_0_OSPM_64BIT_WAKE_F) != 0)) {
+            if (IS_X64) {
+              DEBUG ((DEBUG_INIT, "X64 -> 64bit OS WakeVector(0x%lX)\n", WakeVector));
+              TempStackTop = (UINTN)&TempStack + sizeof(TempStack);
+              SwitchStack ((SWITCH_STACK_ENTRY_POINT)WakeVector, NULL, NULL, (VOID *)(UINTN)TempStackTop);
+            }
+          } else {
+            if (IS_X64) {
+              DEBUG ((DEBUG_INIT, "X64 -> 32bit OS WakeVector(0x%X)\n", (UINT32)WakeVector));
+              AsmDisablePaging64 (0x10, (UINT32)WakeVector, 0, 0, (UINT32)TempStackTop);
+            } else {
+              DEBUG ((DEBUG_INIT, "IA32 -> 32bit OS WakeVector(0x%X)\n", (UINT32)WakeVector));
+              SwitchStack ((SWITCH_STACK_ENTRY_POINT)(UINTN)(UINT32)WakeVector, NULL, NULL, (VOID *)TempStackTop);
+            }
+          }
+        }
+        if (Facs->FirmwareWakingVector != 0) {
+          WakeVector = Facs->FirmwareWakingVector;
+          CopyMem ((VOID *)(UINTN)WakeUpBuffer, (VOID *)(UINTN)&WakeUp, WakeUpSize);
+          DoWake = (DOWAKEUP)(UINTN)WakeUpBuffer;
+          DEBUG ((DEBUG_INIT, "Transfer to 16bit OS WakeVector(0x%X)\n", (UINT32)WakeVector));
+          DoWake ((UINT32)WakeVector);
+        }
         //
         // Should never reach here!
         //
+        CpuHalt ("Failed to resume S3\n");
       }
     }
   }
