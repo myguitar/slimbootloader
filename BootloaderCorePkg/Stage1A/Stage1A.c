@@ -23,6 +23,7 @@ CONST DEBUG_LOG_BUFFER_HEADER mLogBufHdrTmpl = {
   sizeof (DEBUG_LOG_BUFFER_HEADER),
   0,
   {0, 0},
+  1,
   sizeof (DEBUG_LOG_BUFFER_HEADER),
   FixedPcdGet32 (PcdEarlyLogBufferSize)
 };

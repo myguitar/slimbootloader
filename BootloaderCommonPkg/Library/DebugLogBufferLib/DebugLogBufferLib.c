@@ -40,6 +40,7 @@ DebugLogBufferWrite (
 {
   DEBUG_LOG_BUFFER_HEADER  *LogBufHdr;
   UINTN                     RemainingBytes;
+  UINT32                    BufferIndex;
 
   // This function will be called by DEBUG or ASSERT macro.
   // So please DON'T use DEBUG/ASSERT macro inside this function,
@@ -53,6 +54,12 @@ DebugLogBufferWrite (
     return 0;
   }
 
+  RemainingBytes = 0;
+
+  while (!AcquireSpinLockOrFail (&LogBufHdr->SpinLock)) {
+    CpuPause ();
+  }
+
   //
   // Something wrong in Debug Log Buffer.
   // Reset buffer index and continue to record logs.
@@ -61,15 +68,23 @@ DebugLogBufferWrite (
     LogBufHdr->UsedLength = LogBufHdr->HeaderLength;
   }
 
-  RemainingBytes = 0;
-  if (LogBufHdr->UsedLength + NumberOfBytes > LogBufHdr->TotalLength) {
+  //
+  // Update LogBufHdr info first to minimize spinlock wait
+  //
+  BufferIndex = LogBufHdr->UsedLength - LogBufHdr->HeaderLength;
+  if (LogBufHdr->UsedLength + NumberOfBytes >= LogBufHdr->TotalLength) {
     RemainingBytes = LogBufHdr->UsedLength + NumberOfBytes - LogBufHdr->TotalLength;
     NumberOfBytes  = LogBufHdr->TotalLength - LogBufHdr->UsedLength;
+    LogBufHdr->UsedLength = LogBufHdr->HeaderLength + (UINT32)RemainingBytes;
+    LogBufHdr->Attribute |= DEBUG_LOG_BUFFER_ATTRIBUTE_FULL;
+  } else {
+    LogBufHdr->UsedLength += (UINT32)NumberOfBytes;
   }
 
+  ReleaseSpinLock (&LogBufHdr->SpinLock);
+
   if (NumberOfBytes > 0) {
-    CopyMem (&LogBufHdr->Buffer[LogBufHdr->UsedLength - LogBufHdr->HeaderLength], Buffer, NumberOfBytes);
-    LogBufHdr->UsedLength += (UINT32)NumberOfBytes;
+    CopyMem (&LogBufHdr->Buffer[BufferIndex], Buffer, NumberOfBytes);
   }
 
   //
@@ -77,8 +92,6 @@ DebugLogBufferWrite (
   //
   if (RemainingBytes > 0) {
     CopyMem (&LogBufHdr->Buffer[0], Buffer + NumberOfBytes, RemainingBytes);
-    LogBufHdr->UsedLength = LogBufHdr->HeaderLength + (UINT32)RemainingBytes;
-    LogBufHdr->Attribute |= DEBUG_LOG_BUFFER_ATTRIBUTE_FULL;
   }
 
   return (NumberOfBytes + RemainingBytes);

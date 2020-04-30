@@ -142,6 +142,7 @@ CpuInit (
     mSysCpuInfo.CpuInfo[Index].ApicId = ApicId;
   }
 
+  DEBUG ((DEBUG_INFO, "CpuInit(%d) TEST MESSAGE\n", Index));
   if (PcdGet8 (PcdSmmRebaseMode) == SMM_REBASE_ENABLE_ON_S3_RESUME_ONLY) {
     if ((GetBootMode() == BOOT_ON_S3_RESUME) && (mSmmBaseInfo != NULL)) {
       SmmBaseInfo = mSmmBaseInfo;
@@ -196,6 +197,8 @@ ApFunc (
   // Signal AP completion
   //
   InterlockedIncrement (&mMpDataStructPtr->ApDoneCounter);
+
+  DEBUG ((DEBUG_INFO, "test message in ApFunc(%d)\n", Index));
 
   //
   // Enter task loop
