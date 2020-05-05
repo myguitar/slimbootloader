@@ -615,10 +615,11 @@ class Build(object):
             master_idx  = region_name_list.index(master_name)
             process_image_list (master_idx, 0)
             image_size = sum (comp['size'] for comp in comp_list)
-            image_base = self._board.FLASH_LAYOUT_START
+            image_offs = 0
             if self._board.FLASH_LAYOUT_TOPDOWN:
                 image_base = self._board.FLASH_LAYOUT_START - image_size
-            image_offs = 0
+            else:
+                image_base = self._board.FLASH_LAYOUT_START
             for comp in comp_list:
                 comp['bname']  = get_redundant_info (comp['name'])[0]
                 comp['offset'] = image_offs
@@ -638,9 +639,7 @@ class Build(object):
 
 
     def patch_stages (self):
-        pcd_fixed_fixup = 0
-        if not self._board.FLASH_LAYOUT_TOPDOWN:
-            pcd_fixed_fixup = self._board.FLASH_LAYOUT_START
+        pcd_fixed_fixup = 0 if self._board.FLASH_LAYOUT_TOPDOWN else self._board.STAGE1A_BASE
 
         print('Patching STAGE1A')
         extra_cmd = [
@@ -974,12 +973,7 @@ class Build(object):
                 if self._board.FLASH_LAYOUT_TOPDOWN:
                     bins = b'\xff' * (self._board.SLIMBOOTLOADER_SIZE - len(bins)) + bins
                 else:
-                    reset_vector_file = os.path.join('BootloaderCorePkg', 'Stage1A', 'Arm', 'Vtf0', 'Bin', 'ResetVector.arm.raw')
-                    fi_reset = open(reset_vector_file, 'rb')
-                    reset_vector_bins = bytearray(fi_reset.read())
-                    fi_reset.close()
-                    reset_vector_bins_len = len(reset_vector_bins)
-                    bins = reset_vector_bins + b'\xff' * (self._board.FLASH_LAYOUT_START - reset_vector_bins_len) + bins
+                    bins = bins + b'\xff' * (self._board.SLIMBOOTLOADER_SIZE - len(bins))
 
             fo = open(out_path,'wb')
             fo.write(bins)
@@ -1182,14 +1176,10 @@ class Build(object):
                              self._board._SIGNING_SCHEME, HASH_VAL_STRING[self._board.SIGN_HASH_TYPE])
 
         # rebuild reset vector
-        vtf_args = ''
-        if self._arch == 'ARM':
-            vtf_dir = os.path.join('BootloaderCorePkg', 'Stage1A', 'Arm', 'Vtf0')
-            vtf_args = '0x%x' % self._board.FLASH_LAYOUT_START
-        else:
+        if self._arch == 'IA32' or self._arch == 'X64':
             vtf_dir = os.path.join('BootloaderCorePkg', 'Stage1A', 'Ia32', 'Vtf0')
-        x = subprocess.call([sys.executable, 'Build.py', self._arch.lower(), vtf_args],  cwd=vtf_dir)
-        if x: raise Exception ('Failed to build reset vector !')
+            x = subprocess.call([sys.executable, 'Build.py', self._arch.lower()],  cwd=vtf_dir)
+            if x: raise Exception ('Failed to build reset vector !')
 
     def build(self):
         print("Build [%s] ..." % self._board.BOARD_NAME)

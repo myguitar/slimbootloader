@@ -260,7 +260,6 @@ SecStartup2 (
   BufInfo->SrcBase   = (VOID *)(UINTN)PcdGet32 (PcdVerInfoBase);
   BufInfo->AllocLen  = sizeof (BOOT_LOADER_VERSION);
   BufInfo->DstBase   = &LdrGlobal->VerInfoPtr;
-  DumpHex (2, 0, sizeof (BOOT_LOADER_VERSION), BufInfo->SrcBase);
 
   // Hash Store
   if (FeaturePcdGet (PcdVerifiedBootEnabled)) {
@@ -367,7 +366,6 @@ SecStartup2 (
   if (Stage1aParam.AllocDataLen == 0) {
     CpuHalt ("Insufficant memory pool!\n");
   }
-  DumpHex (2, 0, sizeof (STAGE1A_ASM_PARAM), Stage1aAsmParam);
 
   // Enable more CPU featurs
   AsmEnableAvx ();
@@ -495,7 +493,7 @@ ContinueFunc (
 
   // Print version info and
   VerInfoTbl = (BOOT_LOADER_VERSION *)LdrGlobal->VerInfoPtr;
-  ImageId[8] = '\0';
+  ImageId[8] = 0;
   CopyMem (ImageId, &VerInfoTbl->ImageId, sizeof (UINT64));
   DEBUG ((DEBUG_INIT,  "SBID: %a\n"
           "ISVN: %03d\n"
@@ -508,7 +506,7 @@ ContinueFunc (
           VerInfoTbl->ImageVersion.ProjMinorVersion,
           VerInfoTbl->ImageVersion.BuildNumber));
 
-  DEBUG ((DEBUG_INFO,  "SVER: %16lX%a\n"
+  DEBUG ((DEBUG_INFO,  "SVER: %016lX%a\n"
           "FDBG: BLD(%c %a) FSP(%c)\n",
           VerInfoTbl->SourceVersion,
           VerInfoTbl->ImageVersion.Dirty ? "-dirty" : "",

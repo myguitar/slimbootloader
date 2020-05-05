@@ -9,9 +9,7 @@
 #include <Base.h>
 #include <AutoGen.h>
 
-#start of the code section
-.text
-.align 5
+.align 10
 
 # IMPORT
 GCC_ASM_IMPORT(PeiCommonExceptionEntry)

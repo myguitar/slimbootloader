@@ -11,6 +11,7 @@
 #
 import os
 import sys
+import subprocess
 
 sys.dont_write_bytecode = True
 sys.path.append (os.path.join('..', '..'))
@@ -22,7 +23,7 @@ class Board(BaseBoard):
 
         super(Board, self).__init__(*args, **kwargs)
 
-        EXECUTE_IN_PLACE              = 1
+        EXECUTE_IN_PLACE              = 0
         FREE_TEMP_RAM_TOP             = 0x50000000
 
         self.STAGE1_STACK_SIZE            = 0x00002000
@@ -44,7 +45,7 @@ class Board(BaseBoard):
         self.SILICON_PKG_NAME         = 'ArmQemuSocPkg'
 
         self.FLASH_LAYOUT_TOPDOWN     = 0
-        self.FLASH_LAYOUT_START       = 0x00000100
+        self.FLASH_LAYOUT_START       = 0x00000000
         self.PCI_IO_BASE              = 0x3eff0000
         self.PCI_MEM32_BASE           = 0x10000000
         self.PCI_EXPRESS_BASE         = 0x3f000000
@@ -90,8 +91,10 @@ class Board(BaseBoard):
         # self.VERIFIED_BOOT_HASH_MASK  = 0x000000F
         self.VERIFIED_BOOT_HASH_MASK  = 0x0000000
 
+        self.RESET_SIZE           = 0x00001000
         self.STAGE1A_SIZE         = 0x00008000
         self.STAGE1B_SIZE         = 0x0000A000
+        self.STAGE1_SIZE          = self.RESET_SIZE + self.STAGE1A_SIZE + self.STAGE1B_SIZE
         self.STAGE2_SIZE          = 0x0000A000
 
         #self.SIIPFW_SIZE          = 0x00010000
@@ -194,6 +197,24 @@ class Board(BaseBoard):
         container_list = []
         return container_list
 
+    def PlatformBuildHook (self, build, phase):
+        if phase == 'pre-build:after':
+            print('Build Reset Vector!')
+            vtf_dir = os.path.join('BootloaderCorePkg', 'Stage1A', 'Arm', 'Vtf0')
+            vtf_args = '0x%x' % self.RESET_SIZE
+            x = subprocess.call([sys.executable, 'Build.py', 'arm', vtf_args],  cwd=vtf_dir)
+            if x: raise Exception ('Failed to build reset vector !')
+
+            src_path = os.path.join(vtf_dir, 'Bin', 'ResetVector.arm.raw')
+            fi = open(src_path, 'rb')
+            bins = bytearray(fi.read())
+            fi.close()
+
+            out_path = os.path.join(build._fv_dir, 'RESET.bin')
+            fo = open(out_path,'wb')
+            fo.write(bins)
+            fo.close()
+
     def GetImageLayout (self):
 
         compress = '' if self.STAGE1B_XIP else 'Lz4'
@@ -205,12 +226,16 @@ class Board(BaseBoard):
         # output files ends with 'rom' extension will be copied over for final stitching
         if self.REDUNDANT_SIZE == 0:
             img_list.extend ([
-                ('SlimBootloader.bin', [
-                    ('STAGE1A.fd'   ,  ''        , self.STAGE1A_SIZE,  STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
+                ('STAGE1.bin', [
+                    ('RESET.bin'    ,  ''        , self.RESET_SIZE,    STITCH_OPS.MODE_FILE_PAD, STITCH_OPS.MODE_POS_TAIL),
+                    ('STAGE1A.fd'   ,  ''        , self.STAGE1A_SIZE,  STITCH_OPS.MODE_FILE_PAD, STITCH_OPS.MODE_POS_TAIL),
                     ('STAGE1B.fd'   ,  compress  , self.STAGE1B_SIZE,  STITCH_OPS.MODE_FILE_PAD, STITCH_OPS.MODE_POS_TAIL),
+                    ]
+                ),
+                ('SlimBootloader.bin', [
+                    ('STAGE1.bin'   ,  ''        , self.STAGE1_SIZE,   STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
                     ('STAGE2.fd'    ,  'Lz4'     , self.STAGE2_SIZE,   STITCH_OPS.MODE_FILE_PAD, STITCH_OPS.MODE_POS_TAIL),
                     ('CFGDATA.bin'  ,  ''        , self.CFGDATA_SIZE,  STITCH_OPS.MODE_FILE_PAD, STITCH_OPS.MODE_POS_TAIL),
-#                    ('EPAYLOAD.bin' ,  ''        , self.EPAYLOAD_SIZE, STITCH_OPS.MODE_FILE_PAD, STITCH_OPS.MODE_POS_TAIL),
                     ('PAYLOAD.bin'  ,  'Lzma'    , self.PAYLOAD_SIZE,  STITCH_OPS.MODE_FILE_PAD, STITCH_OPS.MODE_POS_TAIL),
                     ('VARIABLE.bin' ,  ''        , self.VARIABLE_SIZE, STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
                     ('SBLRSVD.bin',    ''        , self.SBLRSVD_SIZE,  STITCH_OPS.MODE_FILE_NOP, STITCH_OPS.MODE_POS_TAIL),
