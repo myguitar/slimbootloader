@@ -5,6 +5,8 @@
 
 **/
 
+#include <Library/BootloaderCoreLib.h>
+
 //
 // Global Descriptor Table (GDT)
 //

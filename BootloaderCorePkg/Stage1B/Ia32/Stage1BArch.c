@@ -5,6 +5,11 @@
 
 **/
 
+#include <Library/BootloaderCoreLib.h>
+#include <Library/FspApiLib.h>
+#include <Library/FspSupportLib.h>
+#include <Library/PcdLib.h>
+
 EFI_STATUS
 MemoryInit (
   OUT  VOID   **HobList
