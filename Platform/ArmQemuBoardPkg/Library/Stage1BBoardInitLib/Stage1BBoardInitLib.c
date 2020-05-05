@@ -49,58 +49,65 @@ VirtualMemoryMapInit (
   VOID
   )
 {
-  ARM_MEMORY_REGION_DESCRIPTOR  *VirtualMemoryTable;
+  ARM_MEMORY_REGION_DESCRIPTOR  *Table;
+  ARM_MEMORY_REGION_DESCRIPTOR  *VirtualMemoryMapTable;
   UINT32                         Index;
+  UINT32                         Length;
 
-  VirtualMemoryTable = AllocateTemporaryMemory (0);
-  if (VirtualMemoryTable == NULL) {
+  Index = 0;
+  Table = AllocateTemporaryMemory (0);
+  if (Table == NULL) {
     DEBUG ((DEBUG_ERROR, "%a: Error: Failed AllocatePool()\n", __FUNCTION__));
     return;
   }
 
-  Index = 0;
-  VirtualMemoryTable[Index].PhysicalBase = 0x00000000;
-  VirtualMemoryTable[Index].VirtualBase  = VirtualMemoryTable[Index].PhysicalBase;
-  VirtualMemoryTable[Index].Length       = PcdGet32 (PcdFlashSize);
-  VirtualMemoryTable[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
-
+  Table[Index].PhysicalBase = 0x00000000;
+  Table[Index].VirtualBase  = Table[Index].PhysicalBase;
+  Table[Index].Length       = PcdGet32 (PcdFlashSize);
+  Table[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
   Index++;
-  VirtualMemoryTable[Index].PhysicalBase = PcdGet32 (PcdFlashSize);
-  VirtualMemoryTable[Index].VirtualBase  = VirtualMemoryTable[Index].PhysicalBase;
-  VirtualMemoryTable[Index].Length       = MACH_VIRT_PERIPH_BASE - PcdGet32 (PcdFlashSize);
-  VirtualMemoryTable[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
+  Table[Index].PhysicalBase = PcdGet32 (PcdFlashSize);
+  Table[Index].VirtualBase  = Table[Index].PhysicalBase;
+  Table[Index].Length       = MACH_VIRT_PERIPH_BASE - PcdGet32 (PcdFlashSize);
+  Table[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
   Index++;
-  VirtualMemoryTable[Index].PhysicalBase = MACH_VIRT_PERIPH_BASE;
-  VirtualMemoryTable[Index].VirtualBase  = VirtualMemoryTable[Index].PhysicalBase;
-  VirtualMemoryTable[Index].Length       = MACH_VIRT_PERIPH_SIZE;
-  VirtualMemoryTable[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
 
+  Table[Index].PhysicalBase = MACH_VIRT_PERIPH_BASE;
+  Table[Index].VirtualBase  = Table[Index].PhysicalBase;
+  Table[Index].Length       = MACH_VIRT_PERIPH_SIZE;
+  Table[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
   Index++;
-  VirtualMemoryTable[Index].PhysicalBase = MACH_VIRT_PERIPH_BASE + MACH_VIRT_PERIPH_SIZE;
-  VirtualMemoryTable[Index].VirtualBase  = VirtualMemoryTable[Index].PhysicalBase;
-  VirtualMemoryTable[Index].Length       = PcdGet64 (PcdPciExpressBaseAddress) - VirtualMemoryTable[Index].PhysicalBase;
-  VirtualMemoryTable[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
+  Table[Index].PhysicalBase = MACH_VIRT_PERIPH_BASE + MACH_VIRT_PERIPH_SIZE;
+  Table[Index].VirtualBase  = Table[Index].PhysicalBase;
+  Table[Index].Length       = PcdGet64 (PcdPciExpressBaseAddress) - Table[Index].PhysicalBase;
+  Table[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
   Index++;
-  VirtualMemoryTable[Index].PhysicalBase = PcdGet64 (PcdPciExpressBaseAddress);
-  VirtualMemoryTable[Index].VirtualBase  = VirtualMemoryTable[Index].PhysicalBase;
-  VirtualMemoryTable[Index].Length       = PcdGet64 (PcdSystemMemoryBase) - VirtualMemoryTable[Index].PhysicalBase;
-  VirtualMemoryTable[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
 
+  Table[Index].PhysicalBase = PcdGet64 (PcdPciExpressBaseAddress);
+  Table[Index].VirtualBase  = Table[Index].PhysicalBase;
+  Table[Index].Length       = PcdGet64 (PcdSystemMemoryBase) - Table[Index].PhysicalBase;
+  Table[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
   Index++;
-  VirtualMemoryTable[Index].PhysicalBase = PcdGet64 (PcdSystemMemoryBase);
-  VirtualMemoryTable[Index].VirtualBase  = VirtualMemoryTable[Index].PhysicalBase;
-  VirtualMemoryTable[Index].Length       = PcdGet64 (PcdSystemMemorySize);
-  VirtualMemoryTable[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
 
+  Table[Index].PhysicalBase = PcdGet64 (PcdSystemMemoryBase);
+  Table[Index].VirtualBase  = Table[Index].PhysicalBase;
+  Table[Index].Length       = PcdGet64 (PcdSystemMemorySize);
+  Table[Index].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK;
   Index++;
-  VirtualMemoryTable[Index].PhysicalBase = 0;
-  VirtualMemoryTable[Index].VirtualBase  = 0;
-  VirtualMemoryTable[Index].Length       = 0;
-  VirtualMemoryTable[Index].Attributes   = 0;
 
-  (VOID)PcdSet64S (PcdVirtualMemoryMapTableBase, (UINT64)(UINTN)VirtualMemoryTable);
+  Table[Index].PhysicalBase = 0;
+  Table[Index].VirtualBase  = 0;
+  Table[Index].Length       = 0;
+  Table[Index].Attributes   = 0;
+  Index++;
+
+  Length = sizeof (ARM_MEMORY_REGION_DESCRIPTOR) * Index;
+  VirtualMemoryMapTable = AllocatePages (EFI_SIZE_TO_PAGES (Length));
+  CopyMem (VirtualMemoryMapTable, Table, Length);
+
+  (VOID)PcdSet64S (PcdVirtualMemoryMapTableBase, (UINT64)(UINTN)VirtualMemoryMapTable);
 }
 
 /**
