@@ -495,11 +495,9 @@ ContinueFunc (
   VerInfoTbl = (BOOT_LOADER_VERSION *)LdrGlobal->VerInfoPtr;
   ImageId[8] = 0;
   CopyMem (ImageId, &VerInfoTbl->ImageId, sizeof (UINT64));
-  DEBUG ((DEBUG_INIT,  "SBID: %a\n"
-          "ISVN: %03d\n"
-          "IVER: %03d.%03d.%03d.%03d.%05d\n",
-          ImageId,
-          VerInfoTbl->ImageVersion.SecureVerNum,
+  DEBUG ((DEBUG_INIT, "SBID: %a\n", ImageId));
+  DEBUG ((DEBUG_INIT, "ISVN: %03d\n", VerInfoTbl->ImageVersion.SecureVerNum));
+  DEBUG ((DEBUG_INIT, "IVER: %03d.%03d.%03d.%03d.%05d\n",
           VerInfoTbl->ImageVersion.CoreMajorVersion,
           VerInfoTbl->ImageVersion.CoreMinorVersion,
           VerInfoTbl->ImageVersion.ProjMajorVersion,
