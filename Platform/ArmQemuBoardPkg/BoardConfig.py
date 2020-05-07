@@ -26,11 +26,10 @@ class Board(BaseBoard):
         EXECUTE_IN_PLACE              = 0
         FREE_TEMP_RAM_TOP             = 0x50000000
 
-        self.STAGE1_STACK_SIZE            = 0x00002000
-        self.STAGE1_DATA_SIZE             = 0x00006000
+        self.STAGE1_STACK_SIZE        = 0x00002000
+        self.STAGE1_DATA_SIZE         = 0x00006000
+        self.STAGE1_STACK_BASE        = 0x40080000 - (self.STAGE1_STACK_SIZE + self.STAGE1_DATA_SIZE)
 
-        self.CPU_CORE_PRIMARY_STACK_SIZE  = self.STAGE1_STACK_SIZE + self.STAGE1_DATA_SIZE
-        self.CPU_CORES_STACK_BASE         = 0x40080000 - self.CPU_CORE_PRIMARY_STACK_SIZE
         self.SYSTEM_MEMORY_BASE           = 0x40000000
         self.SYSTEM_MEMORY_SIZE           = 0x40000000
 

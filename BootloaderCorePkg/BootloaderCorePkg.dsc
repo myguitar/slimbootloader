@@ -193,6 +193,7 @@
   gPlatformModuleTokenSpaceGuid.PcdStage2FdSize           | $(STAGE2_FD_SIZE)
   gPlatformModuleTokenSpaceGuid.PcdStage2FvSize           | $(STAGE2_FV_SIZE)
 
+  gPlatformModuleTokenSpaceGuid.PcdStage1StackBase        | $(STAGE1_STACK_BASE)
   gPlatformModuleTokenSpaceGuid.PcdStage1StackSize        | $(STAGE1_STACK_SIZE)
   gPlatformModuleTokenSpaceGuid.PcdStage1StackBaseOffset  | $(STAGE1_STACK_BASE_OFFSET)
   gPlatformModuleTokenSpaceGuid.PcdStage1DataSize         | $(STAGE1_DATA_SIZE)
@@ -323,17 +324,9 @@
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut         | 2
   gPlatformCommonLibTokenSpaceGuid.PcdMeasuredBootHashMask | 0x00000002
 
-[PcdsFixedAtBuild.ARM]
-  gArmPlatformTokenSpaceGuid.PcdCPUCoresStackBase         | $(CPU_CORES_STACK_BASE)
-  gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize   | $(CPU_CORE_PRIMARY_STACK_SIZE)
-
 [PcdsPatchableInModule.ARM]
-!ifdef $(SYSTEM_MEMORY_BASE)
   gArmTokenSpaceGuid.PcdSystemMemoryBase                  | $(SYSTEM_MEMORY_BASE)
-!endif
-!ifdef $(SYSTEM_MEMORY_SIZE)
   gArmTokenSpaceGuid.PcdSystemMemorySize                  | $(SYSTEM_MEMORY_SIZE)
-!endif
   gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryMapTableBase | 0x00000000
 
 ###############################################################################

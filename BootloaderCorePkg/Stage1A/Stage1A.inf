@@ -75,6 +75,7 @@
   gPlatformCommonLibTokenSpaceGuid.PcdVerifiedBootEnabled
   gPlatformCommonLibTokenSpaceGuid.PcdDebugOutputDeviceMask
   gPlatformCommonLibTokenSpaceGuid.PcdContainerMaxNumber
+  gPlatformModuleTokenSpaceGuid.PcdStage1StackBase
   gPlatformModuleTokenSpaceGuid.PcdStage1StackSize
   gPlatformModuleTokenSpaceGuid.PcdStage1BFdBase
   gPlatformModuleTokenSpaceGuid.PcdStage1BLoadBase
@@ -102,8 +103,6 @@
 
 [Pcd.ARM]
   gArmTokenSpaceGuid.PcdArmArchTimerFreqInHz
-  gArmPlatformTokenSpaceGuid.PcdCPUCoresStackBase
-  gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize
 
 [Depex]
   TRUE

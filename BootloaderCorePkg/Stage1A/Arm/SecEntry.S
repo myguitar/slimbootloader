@@ -8,19 +8,24 @@
 
 .text
 
-GCC_ASM_IMPORT(PreSecStartup)
-GCC_ASM_IMPORT(PcdGet32(PcdStage1DataSize))
+GCC_ASM_IMPORT(ArchSecStartup)
 
 GCC_ASM_EXPORT(_ModuleEntryPoint)
 ASM_PFX(_ModuleEntryPoint):
-  MOV32 (r8, FixedPcdGet64(PcdCPUCoresStackBase))
-  MOV32 (r9, FixedPcdGet64(PcdCPUCoresStackBase) + FixedPcdGet32(PcdCPUCorePrimaryStackSize))
-  mov   r0, r8
-  mov   r1, r9
+  //
+  // r0: Bootloader stack base
+  // r1: Bootloader stack top
+  //
+  ldr   r0, =ASM_PFX(FixedPcdGet32(PcdStage1StackBase))
+  ldr   r9, =(ASM_PFX(FixedPcdGet32(PcdStage1StackSize)) + ASM_PFX(FixedPcdGet32(PcdStage1DataSize)))
+  mov   r1, r0
+  add   r1, r9
 
   //
   // Fill Stack Pattern
   //
+  mov   r8, r0
+  mov   r9, r1
   MOV32 (r9, 0x5AA55AA5)
   mov   r10, r9
   mov   r11, r9
@@ -30,16 +35,14 @@ ASM_PFX(_ModuleEntryPoint):
   blt   0b
 
   //
-  // Setup stack
-  // r0: Bootloader stack base
-  // r1: Bootloader stack top
+  // Setup Stage1 Stack
   //
-  ldr   r8, =ASM_PFX(PcdGet32(PcdStage1DataSize))
+  ldr   r8, =ASM_PFX(PcdGet32(PcdStage1StackSize))
   add   r8, r0
   mov   sp, r8
 
   //
-  // Param
+  // Param (dummy for now)
   //
   MOV32 (r9, 0x0)         // TempValue
   mov   r2, r9            // TimeStamp
@@ -51,7 +54,7 @@ ASM_PFX(_ModuleEntryPoint):
   push  {r5, r4, r3, r2, r1, r0}
   mov   r0, sp
 
-  bl    ASM_PFX(PreSecStartup)
+  bl    ASM_PFX(ArchSecStartup)
 
-_NeverReturn:
-        b       _NeverReturn
+_NeverReachHere:
+  b     _NeverReachHere

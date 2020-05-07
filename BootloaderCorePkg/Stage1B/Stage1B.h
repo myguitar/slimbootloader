@@ -69,11 +69,13 @@ RemapStage (
   );
 
 EFI_STATUS
+EFIAPI
 MemoryInit (
   OUT  VOID    **HobList
   );
 
 EFI_STATUS
+EFIAPI
 GetArchReservedMemory (
   IN   VOID     *HobList,
   OUT  UINTN    *MemBase,

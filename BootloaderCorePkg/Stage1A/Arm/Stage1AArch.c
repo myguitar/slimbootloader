@@ -4,19 +4,49 @@
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
-#include "Stage1A.h"
-#include <Library/ArmLib.h>
-#include <Library/SerialPortLib.h>
-#include <Library/PrintLib.h>
-#include <Library/DebugLib.h>
-#include <Library/PcdLib.h>
+#include <Stage1AArch.h>
 
 #define TICKS_PER_MICRO_SEC     (PcdGet32 (PcdArmArchTimerFreqInHz)/1000000U)
 
+STATIC
 VOID
+ArmArchTimerInit (
+  VOID
+  )
+{
+  if (ArmIsArchTimerImplemented ()) {
+    //
+    // Check if Architectural Timer frequency is pre-determined by the platform
+    // (ie. nonzero).
+    //
+    if (PcdGet32 (PcdArmArchTimerFreqInHz) != 0) {
+      //
+      // Check if ticks/uS is not 0. The Architectural timer runs at constant
+      // frequency, irrespective of CPU frequency. According to Generic Timer
+      // Ref manual, lower bound of the frequency is in the range of 1-10MHz.
+      //
+      ASSERT (TICKS_PER_MICRO_SEC);
+
+#ifdef MDE_CPU_ARM
+      //
+      // Only set the frequency for ARMv7. We expect the secure firmware to
+      // have already done it.
+      // If the security extension is not implemented, set Timer Frequency
+      // here.
+      //
+      if ((ArmReadIdPfr1 () & ARM_PFR1_SEC) == 0x0) {
+        ArmWriteCntFrq (PcdGet32 (PcdArmArchTimerFreqInHz));
+      }
+#endif
+    }
+  }
+}
+
+VOID
+EFIAPI
 PeiCommonExceptionEntry (
   IN UINT32 Entry,
-  IN UINTN LR
+  IN UINTN  LR
   )
 {
   CHAR8           Buffer[100];
@@ -55,52 +85,10 @@ PeiCommonExceptionEntry (
   while(1);
 }
 
-extern
 VOID
 EFIAPI
-SecStartup (
-  IN VOID  *Params
-  );
-
-extern VOID  PeiVectorTable (VOID);
-
-VOID
-EFIAPI
-ArmArchTimerInit (
-  VOID
-  )
-{
-  if (ArmIsArchTimerImplemented ()) {
-    //
-    // Check if Architectural Timer frequency is pre-determined by the platform
-    // (ie. nonzero).
-    //
-    if (PcdGet32 (PcdArmArchTimerFreqInHz) != 0) {
-      //
-      // Check if ticks/uS is not 0. The Architectural timer runs at constant
-      // frequency, irrespective of CPU frequency. According to Generic Timer
-      // Ref manual, lower bound of the frequency is in the range of 1-10MHz.
-      //
-      ASSERT (TICKS_PER_MICRO_SEC);
-
-#ifdef MDE_CPU_ARM
-      //
-      // Only set the frequency for ARMv7. We expect the secure firmware to
-      // have already done it.
-      // If the security extension is not implemented, set Timer Frequency
-      // here.
-      //
-      if ((ArmReadIdPfr1 () & ARM_PFR1_SEC) == 0x0) {
-        ArmWriteCntFrq (PcdGet32 (PcdArmArchTimerFreqInHz));
-      }
-#endif
-    }
-  }
-}
-
-VOID
-PreSecStartup (
-  VOID *Param
+ArchSecStartup (
+  IN VOID *Param
   )
 {
   // Init timer asap
@@ -127,6 +115,7 @@ PreSecStartup (
   @retval      Arch Descriptor Pointer
 **/
 ARCH_DESCRIPTOR *
+EFIAPI
 GetArchDescriptor (
   VOID
   )

@@ -18,6 +18,7 @@
 #define RESERVED_MEMORY_SIZE                        SIZE_128MB
 
 EFI_STATUS
+EFIAPI
 MemoryInit (
   OUT  VOID    **HobList
   )
@@ -101,6 +102,7 @@ MemoryInit (
 }
 
 EFI_STATUS
+EFIAPI
 GetArchReservedMemory (
   IN   VOID     *HobList,
   OUT  UINTN    *MemBase,

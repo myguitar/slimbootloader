@@ -19,7 +19,7 @@
   gPlatformModuleTokenSpaceGuid            = { 0x69d13bf0, 0xaf91, 0x4d96, { 0xaa, 0x9f, 0x21, 0x84, 0xc5, 0xce, 0x3b, 0xc0 } }
 
 [Guids.ARM]
-  gArmPlatformTokenSpaceGuid               = { 0x9c0aaed4, 0x74c5, 0x4043, { 0xb4, 0x17, 0xa3, 0x22, 0x38, 0x14, 0xce, 0x76 } }
+  gArmTokenSpaceGuid                       = { 0xBB11ECFE, 0x820F, 0x4968, { 0xBB, 0xA6, 0xF7, 0x6A, 0xFE, 0x30, 0x25, 0x96 } }
 
 [PcdsFixedAtBuild]
   # These will be patched in the FDF file.
@@ -68,10 +68,11 @@
   gPlatformModuleTokenSpaceGuid.PcdStage2FdSize           | 0x00000000 | UINT32 | 0x20000054
   gPlatformModuleTokenSpaceGuid.PcdStage2FvSize           | 0x00000000 | UINT32 | 0x20000055
 
-  gPlatformModuleTokenSpaceGuid.PcdStage1StackSize        | 0x00000000 | UINT32 | 0x20000060
-  gPlatformModuleTokenSpaceGuid.PcdStage1DataSize         | 0x00000000 | UINT32 | 0x20000061
+  gPlatformModuleTokenSpaceGuid.PcdStage1StackBase        | 0x00000000 | UINT32 | 0x20000060
+  gPlatformModuleTokenSpaceGuid.PcdStage1StackSize        | 0x00000000 | UINT32 | 0x20000061
   gPlatformModuleTokenSpaceGuid.PcdStage1StackBaseOffset  | 0x00000000 | UINT32 | 0x20000062
-  gPlatformModuleTokenSpaceGuid.PcdCfgDatabaseSize        | 0x00000000 | UINT32 | 0x20000063
+  gPlatformModuleTokenSpaceGuid.PcdStage1DataSize         | 0x00000000 | UINT32 | 0x20000063
+  gPlatformModuleTokenSpaceGuid.PcdCfgDatabaseSize        | 0x00000000 | UINT32 | 0x20000064
   gPlatformModuleTokenSpaceGuid.PcdStage2LoadHigh         | FALSE      | BOOLEAN| 0x20000068
   gPlatformModuleTokenSpaceGuid.PcdPayloadLoadHigh        | FALSE      | BOOLEAN| 0x20000069
 
@@ -189,12 +190,6 @@
   gPlatformModuleTokenSpaceGuid.PcdPsdBiosEnabled         | FALSE      | BOOLEAN | 0x2000020E
   gPlatformModuleTokenSpaceGuid.PcdSmbiosEnabled          | FALSE      | BOOLEAN | 0x2000020F
   gPlatformModuleTokenSpaceGuid.PcdLinuxPayloadEnabled    | FALSE      | BOOLEAN | 0x20000210
-
-[PcdsFixedAtBuild.ARM]
-  # Stack for CPU Cores in Non Secure Mode
-  gArmPlatformTokenSpaceGuid.PcdCPUCoresStackBase         | 0x00000000 |  UINT64 | 0x40000000
-  gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize   | 0x00000000 |  UINT32 | 0x40000001
-  gArmPlatformTokenSpaceGuid.PcdCPUCoreSecondaryStackSize | 0x00000000 |  UINT32 | 0x40000002
 
 [PcdsPatchableInModule.ARM]
   gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryMapTableBase  | 0x00000000 |  UINT64 | 0x40000100

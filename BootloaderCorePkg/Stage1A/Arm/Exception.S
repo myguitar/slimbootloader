@@ -8,6 +8,7 @@
 #include <AsmMacroIoLib.h>
 #include <Base.h>
 #include <AutoGen.h>
+#include <Stage1AArch.h>
 
 .align 10
 

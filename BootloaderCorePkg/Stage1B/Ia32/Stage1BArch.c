@@ -11,6 +11,7 @@
 #include <Library/PcdLib.h>
 
 EFI_STATUS
+EFIAPI
 MemoryInit (
   OUT  VOID   **HobList
   )
@@ -24,6 +25,7 @@ MemoryInit (
 }
 
 EFI_STATUS
+EFIAPI
 GetArchReservedMemory (
   IN   VOID     *HobList,
   OUT  UINTN    *MemBase,
