@@ -29,6 +29,7 @@
   ArmPkg/ArmPkg.dec
   Silicon/ArmQemuSocPkg/ArmQemuSocPkg.dec
   Platform/CommonBoardPkg/CommonBoardPkg.dec
+  Platform/ArmCommonBoardPkg/ArmCommonBoardPkg.dec
   Platform/ArmQemuBoardPkg/ArmQemuBoardPkg.dec
 
 [LibraryClasses]
@@ -39,6 +40,7 @@
   ConfigDataLib
   BoardSupportLib
   MemoryAllocationLib
+  FdtLib
 
 [Guids]
 
