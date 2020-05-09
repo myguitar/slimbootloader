@@ -1,0 +1,15 @@
+## @file
+#
+#  Copyright (c) 2020, Intel Corporation. All rights reserved.<BR>
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = ArmCommonBoardPkg
+  PACKAGE_GUID                   = A6D28182-D8FB-4E4C-B610-360DF0D0D1E3
+  PACKAGE_VERSION                = 0.1
+
+[Includes]
+  Include

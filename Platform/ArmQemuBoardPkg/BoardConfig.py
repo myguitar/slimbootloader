@@ -171,6 +171,7 @@ class Board(BaseBoard):
         dsc_libs['ARM'] = [
             'IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsicArmVirt.inf',
             'LoaderLib|Platform/CommonBoardPkg/Library/LoaderLib/LoaderLib.inf',
+            'FdtLib|Platform/ArmCommonBoardPkg/Library/FdtLib/FdtLib.inf',
             'PlatformHookLib|Silicon/$(SILICON_PKG_NAME)/Library/PlatformHookLib/PlatformHookLib.inf',
             'ArmGenericTimerCounterLib|ArmPkg/Library/ArmGenericTimerVirtCounterLib/ArmGenericTimerVirtCounterLib.inf',
             'ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf',
