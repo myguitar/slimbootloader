@@ -54,7 +54,8 @@ ContinueFunc (
 
   @retval      Arch Descriptor Pointer
 **/
-ARCH_DESCRIPTOR *
+VOID *
+EFIAPI
 GetArchDescriptor (
   VOID
   );

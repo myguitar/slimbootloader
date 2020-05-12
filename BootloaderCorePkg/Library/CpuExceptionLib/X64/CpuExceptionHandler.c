@@ -101,7 +101,7 @@ UpdateExceptionHandler2 (
 **/
 VOID
 UpdateExceptionHandler (
-  IN IA32_DESCRIPTOR         *IdtDescriptor
+  IN VOID *IdtDescriptor
 )
 {
   UpdateDebugAgentIdt (IdtDescriptor, UpdateExceptionHandler2);

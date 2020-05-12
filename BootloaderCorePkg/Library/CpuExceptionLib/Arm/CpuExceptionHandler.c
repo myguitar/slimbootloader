@@ -38,7 +38,7 @@ CommonExceptionHandler (
 **/
 VOID
 UpdateExceptionHandler (
-  IN ARCH_DESCRIPTOR    *IdtDescriptor
+  IN VOID               *IdtDescriptor
 )
 {
 }

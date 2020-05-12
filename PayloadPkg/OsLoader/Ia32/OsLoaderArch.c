@@ -1,3 +1,6 @@
+#include <Guid/LoaderPlatformInfoGuid.h>
+#include <Register/Intel/Msr/ArchitecturalMsr.h>
+
 /**
   Checks whether the platform is a pre-production part; or in manufacturing mode or debug mode.
 

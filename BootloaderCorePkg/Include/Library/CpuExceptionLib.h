@@ -46,7 +46,7 @@ AsmGetTemplateAddressMap (
 **/
 VOID
 UpdateExceptionHandler (
-  IN ARCH_DESCRIPTOR               *IdtDescriptor
+  IN VOID              *IdtDescriptor
   );
 
 #endif

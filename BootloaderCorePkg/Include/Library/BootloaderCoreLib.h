@@ -11,16 +11,6 @@
 #include <Library/CryptoLib.h>
 #include <Guid/FlashMapInfoGuid.h>
 
-#if defined (MDE_CPU_IA32) || defined (MDE_CPU_X64)
-typedef	 IA32_IDT_GATE_DESCRIPTOR     ARCH_IDT_GATE_DESCRIPTOR;
-typedef  IA32_SEGMENT_DESCRIPTOR      ARCH_SEGMENT_DESCRIPTOR;
-typedef  IA32_DESCRIPTOR              ARCH_DESCRIPTOR;
-#else
-typedef	 UINT64                       ARCH_IDT_GATE_DESCRIPTOR;
-typedef  UINT64                       ARCH_SEGMENT_DESCRIPTOR;
-typedef  UINTN                        ARCH_DESCRIPTOR;
-#endif
-
 #define  MPLD_SIGNATURE               SIGNATURE_32 ('$', 'P', 'L', 'D')
 #define  MVBT_SIGNATURE               SIGNATURE_32 ('$', 'M', 'V', 'B')
 #define  IS_MULTI_PAYLOAD(x)          (*(UINT32 *)(x) == MPLD_SIGNATURE)
@@ -39,10 +29,29 @@ typedef  VOID   (EFIAPI *PAYLOAD_ENTRY) (VOID *HobList, VOID *Params);
 
 #pragma pack(1)
 
+#define  PLATFORM_NAME_SIZE           8
+
+#if defined (MDE_CPU_IA32) || defined (MDE_CPU_X64)
 #define  STAGE_IDT_ENTRY_COUNT        34
 #define  STAGE_GDT_ENTRY_COUNT        7
 
-#define  PLATFORM_NAME_SIZE           8
+typedef struct {
+  UINT64        LdrGlobal;
+  IA32_IDT_GATE_DESCRIPTOR  IdtTable[STAGE_IDT_ENTRY_COUNT];
+} STAGE_IDT_TABLE;
+
+typedef struct {
+  IA32_SEGMENT_DESCRIPTOR   GdtTable[STAGE_GDT_ENTRY_COUNT];
+} STAGE_GDT_TABLE;
+#else
+typedef struct {
+  UINT64        LdrGlobal;
+} STAGE_IDT_TABLE;
+
+typedef struct {
+  UINT64        Dummy;
+} STAGE_GDT_TABLE;
+#endif
 
 typedef enum {
   EnumBufFlashMap,
@@ -57,15 +66,6 @@ typedef enum {
   EnumBufLogBuf,
   EnumBufMax
 } BUF_INFO_ID;
-
-typedef struct {
-  UINT64        LdrGlobal;
-  ARCH_IDT_GATE_DESCRIPTOR  IdtTable[STAGE_IDT_ENTRY_COUNT];
-} STAGE_IDT_TABLE;
-
-typedef struct {
-  ARCH_SEGMENT_DESCRIPTOR   GdtTable[STAGE_GDT_ENTRY_COUNT];
-} STAGE_GDT_TABLE;
 
 typedef struct {
   UINT32        Entry;

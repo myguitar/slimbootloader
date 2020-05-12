@@ -51,7 +51,7 @@ LoadIdt (
 VOID
 LoadGdt (
   IN STAGE_GDT_TABLE   *GdtTable,
-  IN ARCH_DESCRIPTOR   *GdtrPtr
+  IN VOID              *GdtrPtr
   )
 {
 }

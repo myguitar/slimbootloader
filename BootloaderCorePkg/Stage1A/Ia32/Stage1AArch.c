@@ -37,10 +37,11 @@ CONST IA32_DESCRIPTOR mGdt = {
 
   @retval      Arch Descriptor Pointer
 **/
-ARCH_DESCRIPTOR *
+VOID *
+EFIAPI
 GetArchDescriptor (
   VOID
   )
 {
-  return (ARCH_DESCRIPTOR *)&mGdt;
+  return (VOID *)&mGdt;
 }
