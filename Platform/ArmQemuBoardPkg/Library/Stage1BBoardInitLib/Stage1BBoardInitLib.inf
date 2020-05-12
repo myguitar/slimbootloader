@@ -55,4 +55,4 @@
   gEfiMdePkgTokenSpaceGuid.PcdPciExpressBaseAddress
   gArmTokenSpaceGuid.PcdSystemMemoryBase
   gArmTokenSpaceGuid.PcdSystemMemorySize
-  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryMapTableBase
+  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryTableBase

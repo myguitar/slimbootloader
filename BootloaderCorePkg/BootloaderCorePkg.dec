@@ -18,9 +18,6 @@
 [Guids]
   gPlatformModuleTokenSpaceGuid            = { 0x69d13bf0, 0xaf91, 0x4d96, { 0xaa, 0x9f, 0x21, 0x84, 0xc5, 0xce, 0x3b, 0xc0 } }
 
-[Guids.ARM]
-  gArmTokenSpaceGuid                       = { 0xBB11ECFE, 0x820F, 0x4968, { 0xBB, 0xA6, 0xF7, 0x6A, 0xFE, 0x30, 0x25, 0x96 } }
-
 [PcdsFixedAtBuild]
   # These will be patched in the FDF file.
   gPlatformModuleTokenSpaceGuid.PcdFSPTBase               | 0x00000000 | UINT32 | 0x20000000
@@ -32,13 +29,13 @@
  #gPlatformModuleTokenSpaceGuid.PcdFSPSBase
   gPlatformModuleTokenSpaceGuid.PcdFSPSSize               | 0x00000000 | UINT32 | 0x20000007
   gPlatformModuleTokenSpaceGuid.PcdFSPSUpdSize            | 0x00000000 | UINT32 | 0x20000008
-  gPlatformModuleTokenSpaceGuid.PcdFSPEnabled             | TRUE       | BOOLEAN| 0x20000009
 
-  gPlatformModuleTokenSpaceGuid.PcdPciMmcfgBase           | 0x00000000 | UINT32 | 0x20000010
-  gPlatformModuleTokenSpaceGuid.PcdFlashBaseAddress       | 0x00000000 | UINT32 | 0x20000011
-  gPlatformModuleTokenSpaceGuid.PcdFlashSize              | 0x00000000 | UINT32 | 0x20000012
-  gPlatformModuleTokenSpaceGuid.PcdFlashBlockSize         | 0x00001000 | UINT32 | 0x20000013
+  gPlatformModuleTokenSpaceGuid.PcdPciMmcfgBase           | 0x00000000 | UINT32 | 0x20000009
+  gPlatformModuleTokenSpaceGuid.PcdFlashBaseAddress       | 0x00000000 | UINT32 | 0x20000010
+  gPlatformModuleTokenSpaceGuid.PcdFlashSize              | 0x00000000 | UINT32 | 0x20000011
+  gPlatformModuleTokenSpaceGuid.PcdFlashBlockSize         | 0x00001000 | UINT32 | 0x20000012
 
+  gPlatformModuleTokenSpaceGuid.PcdFSPEnabled             | TRUE       | BOOLEAN| 0x20000013
 
   # PcdStageBase:     Flash address to the stage binary (Could be compressed binary)
   # PcdStageSize:     Flash size occupied by the stage binary (Could be compressed binary)
@@ -68,11 +65,11 @@
   gPlatformModuleTokenSpaceGuid.PcdStage2FdSize           | 0x00000000 | UINT32 | 0x20000054
   gPlatformModuleTokenSpaceGuid.PcdStage2FvSize           | 0x00000000 | UINT32 | 0x20000055
 
-  gPlatformModuleTokenSpaceGuid.PcdStage1StackBase        | 0x00000000 | UINT32 | 0x20000060
-  gPlatformModuleTokenSpaceGuid.PcdStage1StackSize        | 0x00000000 | UINT32 | 0x20000061
+  gPlatformModuleTokenSpaceGuid.PcdStage1StackSize        | 0x00000000 | UINT32 | 0x20000060
+  gPlatformModuleTokenSpaceGuid.PcdStage1DataSize         | 0x00000000 | UINT32 | 0x20000061
   gPlatformModuleTokenSpaceGuid.PcdStage1StackBaseOffset  | 0x00000000 | UINT32 | 0x20000062
-  gPlatformModuleTokenSpaceGuid.PcdStage1DataSize         | 0x00000000 | UINT32 | 0x20000063
-  gPlatformModuleTokenSpaceGuid.PcdCfgDatabaseSize        | 0x00000000 | UINT32 | 0x20000064
+  gPlatformModuleTokenSpaceGuid.PcdCfgDatabaseSize        | 0x00000000 | UINT32 | 0x20000063
+  gPlatformModuleTokenSpaceGuid.PcdStage1StackBase        | 0x00000000 | UINT32 | 0x20000064
   gPlatformModuleTokenSpaceGuid.PcdStage2LoadHigh         | FALSE      | BOOLEAN| 0x20000068
   gPlatformModuleTokenSpaceGuid.PcdPayloadLoadHigh        | FALSE      | BOOLEAN| 0x20000069
 
@@ -158,7 +155,7 @@
   gPlatformModuleTokenSpaceGuid.PcdSmramTsegSize          | 0x00000000 | UINT32 | 0x20000121
   gPlatformModuleTokenSpaceGuid.PcdHashStoreBase          | 0xFF000000 | UINT32 | 0x20000181
   gPlatformModuleTokenSpaceGuid.PcdCfgDataIntBase         | 0xFF000000 | UINT32 | 0x20000182
-  gPlatformModuleTokenSpaceGuid.PcdDeviceTreeBase         | 0xFF000000 | UINT32 | 0x20000183
+  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryTableBase | 0xFF000000 | UINT32 | 0x20000183
   gPlatformModuleTokenSpaceGuid.PcdSplashLogoAddress      | 0xFF000000 | UINT32 | 0x20000184
   gPlatformModuleTokenSpaceGuid.PcdFileDataBase           | 0xFF000000 | UINT32 | 0x20000185
   gPlatformModuleTokenSpaceGuid.PcdVerInfoBase            | 0xFF000000 | UINT32 | 0x20000190
@@ -190,6 +187,3 @@
   gPlatformModuleTokenSpaceGuid.PcdPsdBiosEnabled         | FALSE      | BOOLEAN | 0x2000020E
   gPlatformModuleTokenSpaceGuid.PcdSmbiosEnabled          | FALSE      | BOOLEAN | 0x2000020F
   gPlatformModuleTokenSpaceGuid.PcdLinuxPayloadEnabled    | FALSE      | BOOLEAN | 0x20000210
-
-[PcdsPatchableInModule.ARM]
-  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryMapTableBase  | 0x00000000 |  UINT64 | 0x40000100

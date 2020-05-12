@@ -52,7 +52,7 @@ VirtualMemoryMapInit (
   )
 {
   ARM_MEMORY_REGION_DESCRIPTOR  *Table;
-  ARM_MEMORY_REGION_DESCRIPTOR  *VirtualMemoryMapTable;
+  ARM_MEMORY_REGION_DESCRIPTOR  *VirtualMemoryTable;
   UINT32                         Index;
   UINT32                         Length;
 
@@ -106,10 +106,10 @@ VirtualMemoryMapInit (
   Index++;
 
   Length = sizeof (ARM_MEMORY_REGION_DESCRIPTOR) * Index;
-  VirtualMemoryMapTable = AllocatePages (EFI_SIZE_TO_PAGES (Length));
-  CopyMem (VirtualMemoryMapTable, Table, Length);
+  VirtualMemoryTable = AllocatePages (EFI_SIZE_TO_PAGES (Length));
+  CopyMem (VirtualMemoryTable, Table, Length);
 
-  (VOID)PcdSet64S (PcdVirtualMemoryMapTableBase, (UINT64)(UINTN)VirtualMemoryMapTable);
+  (VOID)PcdSet32S (PcdVirtualMemoryTableBase, (UINT64)(UINTN)VirtualMemoryTable);
 }
 
 VOID

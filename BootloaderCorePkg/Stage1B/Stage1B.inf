@@ -119,7 +119,7 @@
 [Pcd.ARM]
   gArmTokenSpaceGuid.PcdSystemMemoryBase
   gArmTokenSpaceGuid.PcdSystemMemorySize
-  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryMapTableBase
+  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryTableBase
 
 [Depex]
   TRUE

@@ -265,7 +265,6 @@
   gPlatformModuleTokenSpaceGuid.PcdAcpiTablesAddress | 0xFF000000
   gPlatformModuleTokenSpaceGuid.PcdAcpiGnvsAddress   | 0xFF000000
   gPlatformModuleTokenSpaceGuid.PcdGraphicsVbtAddress| 0xFF000000
-  gPlatformModuleTokenSpaceGuid.PcdDeviceTreeBase    | 0xFF000000
   gPlatformCommonLibTokenSpaceGuid.PcdAcpiPmTimerBase   | $(ACPI_PM_TIMER_BASE)
   gPlatformModuleTokenSpaceGuid.PcdFSPSBase          | $(FSP_S_BASE)
   gPlatformModuleTokenSpaceGuid.PcdHashStoreBase     | 0xFF000000
@@ -327,7 +326,7 @@
 [PcdsPatchableInModule.ARM]
   gArmTokenSpaceGuid.PcdSystemMemoryBase                  | $(SYSTEM_MEMORY_BASE)
   gArmTokenSpaceGuid.PcdSystemMemorySize                  | $(SYSTEM_MEMORY_SIZE)
-  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryMapTableBase | 0x00000000
+  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryTableBase | 0x00000000
 
 ###############################################################################
 ##
