@@ -585,7 +585,7 @@ StartBooting (
       return RETURN_INVALID_PARAMETER;
     }
     BeforeOSJump ("Starting MB Kernel ...");
-///    JumpToMultibootOs((IA32_BOOT_STATE*)&MultiBoot->BootState);
+    JumpToMultibootOs((IA32_BOOT_STATE*)&MultiBoot->BootState);
     Status = EFI_DEVICE_ERROR;
 
   } else if ((LoadedImage->Flags & (LOADED_IMAGE_PE32 | LOADED_IMAGE_FV)) != 0) {
