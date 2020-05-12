@@ -30,14 +30,24 @@
   BootloaderCommonPkg/BootloaderCommonPkg.dec
   BootloaderCorePkg/BootloaderCorePkg.dec
 
+[Packages.ARM]
+  ArmPkg/ArmPkg.dec
+
 [LibraryClasses]
   BaseLib
   DebugLib
+  PcdLib
 
 [LibraryClasses.IA32, LibraryClasses.X64]
   PagingLib
+
+[LibraryClasses.ARM]
+  ArmLib
 
 [Pcd]
   gPlatformModuleTokenSpaceGuid.PcdStage1BXip
   gPlatformModuleTokenSpaceGuid.PcdStage1BFdBase
   gPlatformModuleTokenSpaceGuid.PcdStage1BFdSize
+
+[Pcd.ARM]
+  gPlatformModuleTokenSpaceGuid.PcdVirtualMemoryTableBase

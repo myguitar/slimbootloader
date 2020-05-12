@@ -12,6 +12,8 @@
 #include <Library/BootloaderCoreLib.h>
 #include <Library/CpuExceptionLib.h>
 #include <Library/PagingLib.h>
+#include <Library/PcdLib.h>
+#include <Library/ArmMmuLib.h>
 
 /**
   Load IDT table for current processor.
@@ -71,6 +73,20 @@ RemapStage (
   VOID
   )
 {
+  ARM_MEMORY_REGION_DESCRIPTOR  *MemoryTable;
+  VOID                          *TranslationTableBase;
+  UINTN                         TranslationTableSize;
+  RETURN_STATUS                 Status;
+
+  MemoryTable = (ARM_MEMORY_REGION_DESCRIPTOR *)(UINTN)PcdGet32 (PcdVirtualMemoryTableBase);
+  if (MemoryTable != NULL) {
+    Status = ArmConfigureMmu (MemoryTable, &TranslationTableBase, &TranslationTableSize);
+    if (!EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_INFO, "MMU enabled!\n"));
+    } else {
+      DEBUG ((DEBUG_ERROR, "Error: Failed to enable MMU\n"));
+    }
+  }
 }
 
 /**
