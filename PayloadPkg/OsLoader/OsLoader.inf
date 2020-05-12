@@ -38,6 +38,12 @@
   KeyManagement.c
   PreOsChecker.c
 
+[Sources.IA32, Sources.X64]
+  Ia32/OsLoaderArch.c
+
+[Sources.ARM]
+  Arm/OsLoaderArch.c
+
 [Packages]
   MdePkg/MdePkg.dec
   BootloaderCommonPkg/BootloaderCommonPkg.dec
