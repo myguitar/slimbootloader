@@ -98,7 +98,7 @@ class Board(BaseBoard):
         self.STAGE1B_XIP          = 0
 
         self.STAGE1A_SIZE         = 0x00010000
-        self.STAGE1B_SIZE         = 0x00030000
+        self.STAGE1B_SIZE         = 0x00040000
         self.STAGE2_SIZE          = 0x00018000
 
         self.TEST_SIZE            = 0x00001000
@@ -139,7 +139,7 @@ class Board(BaseBoard):
         if not self.STAGE1B_XIP:
             # For Stage1B, it can be compressed if STAGE1B_XIP is 0
             # If so, STAGE1B_FD_BASE/STAGE1B_FD_SIZE need to be defined
-            self.STAGE1B_FD_SIZE      = 0x30000
+            self.STAGE1B_FD_SIZE      = 0x40000
             if self.NO_OPT_MODE:
                 self.STAGE1B_FD_SIZE += 0xE000
             self.STAGE1B_FD_BASE    = FREE_TEMP_RAM_TOP - self.STAGE1B_FD_SIZE
