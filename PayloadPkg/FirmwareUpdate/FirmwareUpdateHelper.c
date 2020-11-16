@@ -550,7 +550,7 @@ CheckSblContainerSvn (
         break;
       }
     }
-  } while ((Status == EFI_SUCCESS));
+  } while (Status == EFI_SUCCESS);
 
   // Check validatity of container and component svn checks
   if ((ContainerSvnCheck == 1) && (ComponentSvnCheck == 1)){
