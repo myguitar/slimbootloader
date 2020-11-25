@@ -17,7 +17,7 @@
 #include "PciAri.h"
 #include "PciIov.h"
 
-#define  DEBUG_PCI_ENUM    0
+#define  DEBUG_PCI_ENUM    1
 
 UINT8   *mPoolPtr;
 
@@ -1374,9 +1374,9 @@ PciEnableDevices (
  **/
 UINT64
 PciProgramResources (
-  IN  PCI_IO_DEVICE     *RootBridge,
-  IN  PCI_BAR_TYPE       BarType,
-  IN  UINT64             BaseAddress
+  IN  PCI_IO_DEVICE             *RootBridge,
+  IN  PCI_BAR_TYPE              BarType,
+  IN  UINT64                    BaseAddress
   )
 {
   LIST_ENTRY                *CurrentLink;
@@ -1405,6 +1405,67 @@ PciProgramResources (
   // Return max address allocated
   //
   return Address;
+}
+
+/**
+  Program Pci resources according to BAR type
+
+  @param [in] RootBridge    A pointer which has Root Bridges in ChildList
+  @param [in] BarType       Base address register type
+  @param [in] BaseAddress   The resource base address to be allocated
+
+  @retval Address           Max address allocated for BarType
+ **/
+VOID
+PciProgramResourcesByBridges (
+  IN CONST  PCI_ENUM_POLICY_INFO  *EnumPolicy,
+  IN  PCI_IO_DEVICE               *RootBridge,
+  IN  PCI_ROOT_BRIDGE_INFO_HOB    *RootBridgeInfoHob
+)
+{
+  LIST_ENTRY                *CurrentLink;
+  PCI_IO_DEVICE             *Root;
+  UINT64                    Address;
+  UINT64                    Length;
+  UINT64                    Offset;
+  PCI_BAR_TYPE              BarType;
+  UINT8                     BridgeIndex;
+
+  BridgeIndex = 0;
+  CurrentLink = RootBridge->ChildList.ForwardLink;
+  while ((CurrentLink != NULL) && (CurrentLink != &RootBridge->ChildList)) {
+    Root = PCI_IO_DEVICE_FROM_LINK (CurrentLink);
+
+    for (BarType = PciBarTypeIo16; BarType <= PciBarTypePMem64; BarType++) {
+      if (((BarType == PciBarTypeIo32) && (EnumPolicy->Downgrade.Io32 != 0)) ||
+          ((BarType == PciBarTypeMem64) && (EnumPolicy->Downgrade.Mem64 != 0)) ||
+          ((BarType == PciBarTypePMem64) && (EnumPolicy->Downgrade.PMem64 != 0))) {
+        continue;
+      }
+
+      if ((BarType == PciBarTypePMem32) || (BarType == PciBarTypePMem64)) {
+        // PMem Base
+        Address = Root->PciBar[BarType - 2].BaseAddress + Root->PciBar[BarType - 2].Length;
+        Address = ALIGN (Address, 0xFFFFFFF);
+
+        Offset = Address - Root->PciBar[BarType - 2].BaseAddress;
+        Length = RootBridgeInfoHob->Entry[BridgeIndex].Resource[BarType - 2].ResLength;
+        RootBridgeInfoHob->Entry[BridgeIndex].Resource[BarType - 2].ResLength = Offset;
+
+        RootBridgeInfoHob->Entry[BridgeIndex].Resource[BarType - 1].ResBase   = Address;
+        RootBridgeInfoHob->Entry[BridgeIndex].Resource[BarType - 1].ResLength = Length - Offset;
+      }
+
+      CalculateResource (Root, BarType);
+      Address = RootBridgeInfoHob->Entry[BridgeIndex].Resource[BarType - 1].ResBase;
+      Address = ALIGN(Address, Root->PciBar[BarType - 1].Alignment);
+      Root->PciBar[BarType - 1].BaseAddress = Address;
+      ProgramResource (Root, BarType);
+    }
+
+    CurrentLink = CurrentLink->ForwardLink;
+    BridgeIndex++;
+  }
 }
 
 /**
@@ -1643,6 +1704,7 @@ PciEnumeration (
 {
   CONST PCI_ENUM_POLICY_INFO  *EnumPolicy;
   PCI_IO_DEVICE               *RootBridge;
+  PCI_ROOT_BRIDGE_INFO_HOB    *RootBridgeInfoHob;
   UINT64                      BaseAddress;
   UINT8                       RootBridgeCount;
   EFI_STATUS                  Status;
@@ -1656,35 +1718,42 @@ PciEnumeration (
   ASSERT_EFI_ERROR (Status);
   ASSERT (RootBridgeCount > 0);
 
-  BaseAddress = PcdGet32 (PcdPciResourceIoBase);
-  BaseAddress = PciProgramResources (RootBridge, PciBarTypeIo16, BaseAddress);
+  RootBridgeInfoHob = (PCI_ROOT_BRIDGE_INFO_HOB *) GetGuidHobData (NULL, NULL,
+    &gLoaderPciRootBridgeInfoGuid);
+  if (RootBridgeInfoHob != NULL) {
+    ASSERT (RootBridgeInfoHob->Count == RootBridgeCount);
+    PciProgramResourcesByBridges (EnumPolicy, RootBridge, RootBridgeInfoHob);
+  } else {
+    BaseAddress = PcdGet32 (PcdPciResourceIoBase);
+    BaseAddress = PciProgramResources (RootBridge, PciBarTypeIo16, BaseAddress);
 
-  if ((EnumPolicy != NULL) && (EnumPolicy->Downgrade.Io32 == 0)) {
-    BaseAddress = ALIGN (BaseAddress, 0xFFFF);
-    PciProgramResources (RootBridge, PciBarTypeIo32, BaseAddress);
-  }
+    if ((EnumPolicy != NULL) && (EnumPolicy->Downgrade.Io32 == 0)) {
+      BaseAddress = ALIGN (BaseAddress, 0xFFFF);
+      PciProgramResources (RootBridge, PciBarTypeIo32, BaseAddress);
+    }
 
-  BaseAddress = PcdGet32 (PcdPciResourceMem32Base);
-  BaseAddress = PciProgramResources(RootBridge, PciBarTypeMem32, BaseAddress);
-  BaseAddress = ALIGN(BaseAddress, 0xFFFFFFF);
-  PciProgramResources(RootBridge, PciBarTypePMem32, BaseAddress);
+    BaseAddress = PcdGet32 (PcdPciResourceMem32Base);
+    BaseAddress = PciProgramResources(RootBridge, PciBarTypeMem32, BaseAddress);
+    BaseAddress = ALIGN(BaseAddress, 0xFFFFFFF);
+    PciProgramResources(RootBridge, PciBarTypePMem32, BaseAddress);
 
-  BaseAddress = PcdGet64 (PcdPciResourceMem64Base);
-  if ((EnumPolicy != NULL) && (EnumPolicy->Downgrade.Mem64 == 0)) {
-    ASSERT (BaseAddress > 0xFFFFFFFF);
-    BaseAddress = PciProgramResources (RootBridge, PciBarTypeMem64, BaseAddress);
-  }
+    BaseAddress = PcdGet64 (PcdPciResourceMem64Base);
+    if ((EnumPolicy != NULL) && (EnumPolicy->Downgrade.Mem64 == 0)) {
+      ASSERT (BaseAddress > 0xFFFFFFFF);
+      BaseAddress = PciProgramResources (RootBridge, PciBarTypeMem64, BaseAddress);
+    }
 
-  if ((EnumPolicy != NULL) && (EnumPolicy->Downgrade.PMem64 == 0)) {
-    BaseAddress = MAX (BaseAddress, PcdGet64 (PcdPciResourceMem64Base));
-    ASSERT (BaseAddress > 0xFFFFFFFF);
-    BaseAddress = ALIGN (BaseAddress, 0xFFFFFFF);
-    PciProgramResources (RootBridge, PciBarTypePMem64, BaseAddress);
+    if ((EnumPolicy != NULL) && (EnumPolicy->Downgrade.PMem64 == 0)) {
+      BaseAddress = MAX (BaseAddress, PcdGet64 (PcdPciResourceMem64Base));
+      ASSERT (BaseAddress > 0xFFFFFFFF);
+      BaseAddress = ALIGN (BaseAddress, 0xFFFFFFF);
+      PciProgramResources (RootBridge, PciBarTypePMem64, BaseAddress);
+    }
+
+    BuildPciRootBridgeInfoHob (RootBridge, RootBridgeCount);
   }
 
   PciEnableDevices (RootBridge);
-
-  BuildPciRootBridgeInfoHob (RootBridge, RootBridgeCount);
 
 #if DEBUG_PCI_ENUM
   DumpPciResources (RootBridge);
