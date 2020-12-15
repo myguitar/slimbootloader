@@ -157,6 +157,7 @@
   gPlatformModuleTokenSpaceGuid.PcdPciResourceMem32Base   | $(PCI_MEM32_BASE)
   gPlatformModuleTokenSpaceGuid.PcdPciEnumPolicyInfo      | $(PCI_ENUM_POLICY_INFO)
   gPlatformModuleTokenSpaceGuid.PcdPciResourceMem64Base   | $(PCI_MEM64_BASE)
+  gPlatformModuleTokenSpaceGuid.PcdPciResAllocDefaultTable| $(PCI_RES_ALLOC_DEFAULT_TABLE)
 
   gPlatformModuleTokenSpaceGuid.PcdLoaderReservedMemSize  | $(LOADER_RSVD_MEM_SIZE)
   gPlatformModuleTokenSpaceGuid.PcdLoaderAcpiNvsSize      | $(LOADER_ACPI_NVS_MEM_SIZE)
@@ -320,6 +321,7 @@
   gPlatformModuleTokenSpaceGuid.PcdAriSupport             | $(SUPPORT_ARI)
   gPlatformModuleTokenSpaceGuid.PcdSrIovSupport           | $(SUPPORT_SR_IOV)
   gPlatformModuleTokenSpaceGuid.PcdEnableSetup            | $(ENABLE_SBL_SETUP)
+  gPlatformModuleTokenSpaceGuid.PcdRuntimePciResEnabled   | $(ENABLE_RUNTIME_PCI_RES)
   gPayloadTokenSpaceGuid.PcdPayloadModuleEnabled          | $(ENABLE_PAYLOD_MODULE)
 
 !ifdef $(S3_DEBUG)

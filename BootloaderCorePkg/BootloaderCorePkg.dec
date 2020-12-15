@@ -118,6 +118,7 @@
   # self._PCI_ENUM_BUS_SCAN_ITEMS   = '0,0xff'
   gPlatformModuleTokenSpaceGuid.PcdPciEnumPolicyInfo      | {0x00}     | VOID*  | 0x200000A5
   gPlatformModuleTokenSpaceGuid.PcdPciResourceMem64Base   | 0x0000000000000000  | UINT64     | 0x200000A6
+  gPlatformModuleTokenSpaceGuid.PcdPciResAllocDefaultTable| {0x00}     | VOID*  | 0x200000A7
 
   gPlatformModuleTokenSpaceGuid.PcdLoaderHobStackSize     | 0x00040000 | UINT32 | 0x200000B0
   gPlatformModuleTokenSpaceGuid.PcdEarlyLogBufferSize     | 0x00000400 | UINT32 | 0x200000B1
@@ -205,3 +206,4 @@
   gPlatformModuleTokenSpaceGuid.PcdSrIovSupport           | FALSE      | BOOLEAN | 0x20000212
   gPlatformModuleTokenSpaceGuid.PcdEnableSetup            | FALSE      | BOOLEAN | 0x20000213
   gPlatformModuleTokenSpaceGuid.PcdLegacyEfSegmentEnabled | TRUE       | BOOLEAN | 0x20000214
+  gPlatformModuleTokenSpaceGuid.PcdRuntimePciResEnabled   | TRUE       | BOOLEAN | 0x20000215

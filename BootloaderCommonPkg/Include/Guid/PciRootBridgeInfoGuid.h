@@ -51,6 +51,7 @@ typedef struct {
   PCI_ROOT_BRIDGE_ENTRY     Entry[0];
 } PCI_ROOT_BRIDGE_INFO_HOB;
 
+#pragma pack(1)
 typedef struct {
   UINT8                     BusBase;
   UINT8                     BusLimit;
@@ -68,5 +69,6 @@ typedef struct {
   UINT8                     Reserved[3];
   PCI_RES_ALLOC_RANGE       ResourceRange[0];
 } PCI_RES_ALLOC_TABLE;
+#pragma pack()
 
 #endif // __PCI_ROOT_BRIDGE_INFO_GUID_H__

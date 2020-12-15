@@ -367,6 +367,7 @@ SecStartup (
   S3_DATA                        *S3Data;
   PLATFORM_SERVICE               *PlatformService;
   VOID                           *SmbiosEntry;
+  VOID                           *PciResAllocTable;
 
   // Initialize HOB
   LdrGlobal = (LOADER_GLOBAL_DATA *)GetLoaderGlobalDataPointer();
@@ -463,6 +464,15 @@ SecStartup (
   AddMeasurePoint (0x3090);
 
   if (FixedPcdGetBool (PcdPciEnumEnabled)) {
+    if (FixedPcdGetBool (PcdRuntimePciResEnabled)) {
+      PciResAllocTable = GetPlatformPciResAllocTablePtr ();
+      ASSERT (PciResAllocTable != NULL);
+    } else {
+      PciResAllocTable = (VOID *)PcdGetPtr (PcdPciResAllocDefaultTable);
+    }
+    Status = PcdSet32S (PcdPciResAllocTableBase, (UINT32)(UINTN)PciResAllocTable);
+    ASSERT_EFI_ERROR (Status);
+
     MemPool = AllocateTemporaryMemory (0);
     DEBUG ((DEBUG_INIT, "PCI Enum\n"));
     Status = PciEnumeration (MemPool);

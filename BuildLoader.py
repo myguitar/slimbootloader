@@ -217,6 +217,7 @@ class BaseBoard(object):
         self.ENABLE_PAYLOD_MODULE  = 0
         self.ENABLE_FAST_BOOT      = 0
         self.ENABLE_LEGACY_EF_SEG  = 1
+        self.ENABLE_RUNTIME_PCI_RES = 0
 
         self.SUPPORT_ARI           = 0
         self.SUPPORT_SR_IOV        = 0
@@ -923,6 +924,13 @@ class Build(object):
                 policy_value = getattr(self._board, policy_name)
             pci_enum_policy_dict[policy_list] = policy_value
         self._board.PCI_ENUM_POLICY_INFO = gen_pci_enum_policy_info(pci_enum_policy_dict)
+
+        # Generate Pci Resource Allocation Default Table
+        self._board.PCI_RES_ALLOC_DEFAULT_TABLE = gen_pci_res_alloc_table(
+                getattr(self._board, 'PCI_IO_BASE'),
+                getattr(self._board, 'PCI_MEM32_BASE'),
+                getattr(self._board, 'PCI_MEM64_BASE')
+            )
 
     def create_redundant_components (self):
         if self._board.REDUNDANT_SIZE == 0:

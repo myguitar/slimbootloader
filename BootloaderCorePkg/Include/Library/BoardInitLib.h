@@ -163,4 +163,18 @@ GetPlatformDataSize (
   IN  VOID
   );
 
+/**
+  Get size of Platform Specific Data.
+
+  @param[in] none
+
+  @retval    A pointer of Platform PCI Resource Allocation Table
+
+**/
+VOID *
+EFIAPI
+GetPlatformPciResAllocTablePtr (
+  VOID
+  );
+
 #endif

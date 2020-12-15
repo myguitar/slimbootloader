@@ -200,6 +200,44 @@ class PciEnumPolicyInfo(Structure):
         self.BusScanType        = 0
         self.NumOfBus           = 0
 
+class PciResAllocRange(Structure):
+    _pack_ = 1
+    _fields_ = [
+        ('BusBase',             c_uint8),
+        ('BusLimit',            c_uint8),
+        ('Reserved',            c_uint16),
+        ('IoBase',              c_uint32),
+        ('IoLimit',             c_uint32),
+        ('Mmio32Base',          c_uint32),
+        ('Mmio32Limit',         c_uint32),
+        ('Mmio64Base',          c_uint64),
+        ('Mmio64Limit',         c_uint64),
+    ]
+
+    def __init__(self, iobase = 0, mem32base = 0, mem64base = 0):
+        self.BusBase            = 0
+        self.BusLimit           = 0xFF
+        self.Reserved           = 0
+        self.IoBase             = iobase
+        self.IoLimit            = 0xFFFF
+        self.Mmio32Base         = mem32base
+        self.Mmio32Limit        = 0xFFFFFFFF
+        self.Mmio64Base         = mem64base
+        self.Mmio64Limit        = mem64base + (mem64base >> 1)
+
+class PciResAllocTable(Structure):
+    _pack_ = 1
+    _fields_ = [
+        ('NumOfEntries',        c_uint8),
+        ('Reserved',            ARRAY(c_uint8, 3)),
+        ('ResourceRange',       ARRAY(PciResAllocRange, 1))
+    ]
+
+    def __init__(self, iobase = 0, mem32base = 0, mem64base = 0):
+        self.NumOfEntries       = 0
+        self.Reserved           = (0, 0, 0)
+        self.ResourceRange[0]   = PciResAllocRange(iobase, mem32base, mem64base)
+
 def get_visual_studio_info ():
 
     toolchain        = ''
@@ -1092,6 +1130,14 @@ def gen_pci_enum_policy_info (policy_dict):
     except KeyError:
         raise Exception ("Failed to generate PCI_ENUM_POLICY_INFO!")
 
+    return struct_string
+
+def gen_pci_res_alloc_table (iobase, mem32base, mem64base):
+    res_table = PciResAllocTable(iobase, mem32base, mem64base)
+    res_table.NumOfEntries = 1
+
+    struct_data = list(bytearray(res_table))
+    struct_string = '{' + ','.join(['0x%02x' % elem for elem in struct_data]) + '}'
     return struct_string
 
 def get_vtf_patch_base (stage1a_fd):
