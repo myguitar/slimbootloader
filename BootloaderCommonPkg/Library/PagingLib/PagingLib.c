@@ -94,6 +94,34 @@ GetPhysicalAddressBits (
 }
 
 /**
+  The function will check if IA32 PAE is supported.
+
+  @retval TRUE      IA32 PAE is supported.
+  @retval FALSE     IA32 PAE is not supported.
+
+**/
+BOOLEAN
+IsIa32PaeSupport (
+  VOID
+  )
+{
+  UINT32            RegEax;
+  UINT32            RegEdx;
+  BOOLEAN           Ia32PaeSupport;
+
+  Ia32PaeSupport = FALSE;
+  AsmCpuid (0x0, &RegEax, NULL, NULL, NULL);
+  if (RegEax >= 0x1) {
+    AsmCpuid (0x1, NULL, NULL, NULL, &RegEdx);
+    if ((RegEdx & BIT6) != 0) {
+      Ia32PaeSupport = TRUE;
+    }
+  }
+
+  return Ia32PaeSupport;
+}
+
+/**
   This function returns page tables memory size.
 
   @param[in] IsX64Mode     Determine to build page table for x64 mode or not.
@@ -311,6 +339,7 @@ CreateIdentityMappingPageTables (
   VOID             *PageBuffer;
   BOOLEAN           Page1GSupport;
   BOOLEAN           Page5LevelSupport;
+  BOOLEAN           Ia32PaeSupport;
   UINT8             PhysicalAddressBits;
   UINTN             TotalPagesNum;
   UINT32            NumOfPml5Entries;
@@ -324,86 +353,138 @@ CreateIdentityMappingPageTables (
   UINTN             Cr0;
 
   PhysicalAddressBits = GetPhysicalAddressBits ();
-  Page1GSupport       = IsPage1GSupport ();
-  Page5LevelSupport   = Is5LevelPagingNeeded ();
-  DEBUG ((DEBUG_INFO, "RequestedAddressBits=%u PhysicalAddressBits=%u 5LevelPaging=%u 1GPage=%u\n",
-    RequestedAddressBits, PhysicalAddressBits, Page5LevelSupport, Page1GSupport));
-
   ASSERT (PhysicalAddressBits <= 52);
+
+  DEBUG ((DEBUG_INFO, "RequestedAddressBits=%u PhysicalAddressBits=%u\n",
+    RequestedAddressBits, PhysicalAddressBits));
+
   if (RequestedAddressBits < MIN_ADDR_BITS) {
     RequestedAddressBits = MIN_ADDR_BITS;
   }
+
   if (PhysicalAddressBits > RequestedAddressBits) {
     PhysicalAddressBits = RequestedAddressBits;
   }
-  if (!Page5LevelSupport && (PhysicalAddressBits > 48)) {
-    PhysicalAddressBits = 48;
-  }
 
-  NumOfPml5Entries = 1;
-  if (PhysicalAddressBits > 48) {
-    NumOfPml5Entries = (UINT32) LShiftU64 (1, PhysicalAddressBits - 48);
-    PhysicalAddressBits = 48;
-  }
+  if (IS_X64) {
+    Page1GSupport       = IsPage1GSupport ();
+    Page5LevelSupport   = Is5LevelPagingNeeded ();
+    DEBUG ((DEBUG_INFO, "5LevelPaging=%u 1GPage=%u\n",
+      Page5LevelSupport, Page1GSupport));
 
-  NumOfPml4Entries = 1;
-  if (PhysicalAddressBits > 39) {
-    NumOfPml4Entries = (UINT32) LShiftU64 (1, PhysicalAddressBits - 39);
-    PhysicalAddressBits = 39;
-  }
+    if (!Page5LevelSupport && (PhysicalAddressBits > 48)) {
+      PhysicalAddressBits = 48;
+    }
 
-  NumOfPdpEntries = 1;
-  ASSERT (PhysicalAddressBits > 30);
-  NumOfPdpEntries = (UINT32) LShiftU64 (1, PhysicalAddressBits - 30);
+    NumOfPml5Entries = 1;
+    if (PhysicalAddressBits > 48) {
+      NumOfPml5Entries = (UINT32) LShiftU64 (1, PhysicalAddressBits - 48);
+      PhysicalAddressBits = 48;
+    }
 
-  if (!Page1GSupport) {
-    TotalPagesNum = ((NumOfPdpEntries + 1) * NumOfPml4Entries + 1) * NumOfPml5Entries + 1;
-  } else {
-    TotalPagesNum = (NumOfPml4Entries + 1) * NumOfPml5Entries + 1;
-  }
+    NumOfPml4Entries = 1;
+    if (PhysicalAddressBits > 39) {
+      NumOfPml4Entries = (UINT32) LShiftU64 (1, PhysicalAddressBits - 39);
+      PhysicalAddressBits = 39;
+    }
 
-  if (!Page5LevelSupport) {
-    TotalPagesNum--;
-  }
+    NumOfPdpEntries = 1;
+    ASSERT (PhysicalAddressBits > 30);
+    NumOfPdpEntries = (UINT32) LShiftU64 (1, PhysicalAddressBits - 30);
 
-  DEBUG ((DEBUG_INFO, "Pml5=%u Pml4=%u Pdp=%u TotalPage=%Lu\n",
-    NumOfPml5Entries, NumOfPml4Entries, NumOfPdpEntries, (UINT64)TotalPagesNum));
+    if (!Page1GSupport) {
+      TotalPagesNum = ((NumOfPdpEntries + 1) * NumOfPml4Entries + 1) * NumOfPml5Entries + 1;
+    } else {
+      TotalPagesNum = (NumOfPml4Entries + 1) * NumOfPml5Entries + 1;
+    }
 
-  PageBuffer = AllocatePages (TotalPagesNum);
-  if (PageBuffer == NULL) {
-    return EFI_OUT_OF_RESOURCES;
-  }
-  ZeroMem (PageBuffer, sizeof (EFI_PAGES_TO_SIZE (TotalPagesNum)));
+    if (!Page5LevelSupport) {
+      TotalPagesNum--;
+    }
 
-  Address   = 0;
-  Attribute = IA32_PG_P | IA32_PG_RW;
-  Page64 = (UINT64 *)PageBuffer;
+    DEBUG ((DEBUG_INFO, "Pml5=%u Pml4=%u Pdp=%u TotalPage=%Lu\n",
+      NumOfPml5Entries, NumOfPml4Entries, NumOfPdpEntries, (UINT64)TotalPagesNum));
 
-  // PML5
-  if (Page5LevelSupport) {
-    for (Idx = 0; Idx < NumOfPml5Entries; Idx++) {
+    PageBuffer = AllocatePages (TotalPagesNum);
+    if (PageBuffer == NULL) {
+      return EFI_OUT_OF_RESOURCES;
+    }
+    ZeroMem (PageBuffer, sizeof (EFI_PAGES_TO_SIZE (TotalPagesNum)));
+
+    Address   = 0;
+    Attribute = IA32_PG_P | IA32_PG_RW;
+    Page64 = (UINT64 *)PageBuffer;
+
+    // PML5
+    if (Page5LevelSupport) {
+      for (Idx = 0; Idx < NumOfPml5Entries; Idx++) {
+        Page64[Idx] = (UINTN)Page64 + SIZE_4KB * (Idx + 1) + Attribute;
+      }
+      // PML4 Entry
+      Page64 = (UINT64 *)((UINTN)Page64 + SIZE_4KB);
+    }
+
+    // PML4
+    Entries = (NumOfPml5Entries == 1) ? NumOfPml4Entries : 512;
+    for (Idx = 0; Idx < Entries; Idx++) {
       Page64[Idx] = (UINTN)Page64 + SIZE_4KB * (Idx + 1) + Attribute;
     }
-    // PML4 Entry
+
     Page64 = (UINT64 *)((UINTN)Page64 + SIZE_4KB);
-  }
+    if (Page1GSupport) {
+      // PDE
+      Entries *= 512;
+      for (Idx = 0; Idx < Entries; Idx++, Address += SIZE_1GB) {
+        Page64[Idx] = Address + (Attribute | IA32_PG_PD);
+      }
+    } else {
+      // PDP
+      Entries *= (NumOfPml4Entries == 1 ? NumOfPdpEntries : 512);
+      for (Idx = 0; Idx < Entries; Idx++) {
+        Page64[Idx] = (UINTN)Page64 + (SIZE_4KB * (Idx + 1)) + Attribute;
+      }
 
-  // PML4
-  Entries = (NumOfPml5Entries == 1) ? NumOfPml4Entries : 512;
-  for (Idx = 0; Idx < Entries; Idx++) {
-    Page64[Idx] = (UINTN)Page64 + SIZE_4KB * (Idx + 1) + Attribute;
-  }
+      // PDE
+      Page64 = (UINT64 *)((UINTN)Page64 + SIZE_4KB);
+      Entries *= 512;
+      for (Idx = 0; Idx < Entries; Idx++, Address += SIZE_2MB) {
+        Page64[Idx] = Address + (Attribute | IA32_PG_PD);
+      }
+    }
 
-  Page64 = (UINT64 *)((UINTN)Page64 + SIZE_4KB);
-  if (Page1GSupport) {
-    // PDE
-    Entries *= 512;
-    for (Idx = 0; Idx < Entries; Idx++, Address += SIZE_1GB) {
-      Page64[Idx] = Address + (Attribute | IA32_PG_PD);
+    Cr0 = AsmReadCr0 ();
+    if (Cr0 & BIT31) {
+      // Alreay in paging mode
+      AsmWriteCr3 ((UINTN)PageBuffer);
+    } else {
+      // Enable paging
+      AsmWriteCr4 (AsmReadCr4() | BIT4);
+      AsmWriteCr3 ((UINTN)PageBuffer);
+      AsmWriteCr0 (Cr0 | BIT31);
     }
   } else {
+    Ia32PaeSupport = IsIa32PaeSupport ();
+    ASSERT (Ia32PaeSupport);
+
+    if (PhysicalAddressBits > 36) {
+      PhysicalAddressBits = 36;
+    }
+
+    NumOfPdpEntries = (UINT32) LShiftU64 (1, (PhysicalAddressBits - 30));
+    TotalPagesNum = NumOfPdpEntries + 1;
+
+    PageBuffer = AllocatePages (TotalPagesNum);
+    if (PageBuffer == NULL) {
+      return EFI_OUT_OF_RESOURCES;
+    }
+    ZeroMem (PageBuffer, sizeof (EFI_PAGES_TO_SIZE (TotalPagesNum)));
+
+    Address   = 0;
+    Attribute = IA32_PG_P | IA32_PG_RW;
+    Page64 = (UINT64 *)PageBuffer;
+
     // PDP
-    Entries *= (NumOfPml4Entries == 1 ? NumOfPdpEntries : 512);
+    Entries = NumOfPdpEntries;
     for (Idx = 0; Idx < Entries; Idx++) {
       Page64[Idx] = (UINTN)Page64 + (SIZE_4KB * (Idx + 1)) + Attribute;
     }
@@ -414,16 +495,14 @@ CreateIdentityMappingPageTables (
     for (Idx = 0; Idx < Entries; Idx++, Address += SIZE_2MB) {
       Page64[Idx] = Address + (Attribute | IA32_PG_PD);
     }
-  }
 
-  Cr0 = AsmReadCr0 ();
-  if (Cr0 & BIT31) {
-    // Alreay in paging mode
+    Cr0 = AsmReadCr0 ();
+    if (Cr0 & BIT31) {
+      // Alreay in paging mode
+      AsmWriteCr0 (AsmReadCr0 () & (~BIT31));
+    }
     AsmWriteCr3 ((UINTN)PageBuffer);
-  } else {
-    // Enable paging
-    AsmWriteCr4 (AsmReadCr4() | BIT4);
-    AsmWriteCr3 ((UINTN)PageBuffer);
+    AsmWriteCr4 (AsmReadCr4() | BIT5);
     AsmWriteCr0 (Cr0 | BIT31);
   }
 
