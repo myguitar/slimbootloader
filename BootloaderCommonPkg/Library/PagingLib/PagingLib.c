@@ -373,6 +373,7 @@ CreateIdentityMappingPageTables (
   if (PageBuffer == NULL) {
     return EFI_OUT_OF_RESOURCES;
   }
+  ZeroMem (PageBuffer, sizeof (EFI_PAGES_TO_SIZE (TotalPagesNum)));
 
   Address   = 0;
   Attribute = IA32_PG_P | IA32_PG_RW;
@@ -404,11 +405,11 @@ CreateIdentityMappingPageTables (
     // PDP
     Entries *= (NumOfPml4Entries == 1 ? NumOfPdpEntries : 512);
     for (Idx = 0; Idx < Entries; Idx++) {
-      Page64[Idx] = (UINTN)Page64 + (Entries * sizeof (UINT64)) + (SIZE_4KB * Idx) + Attribute;
+      Page64[Idx] = (UINTN)Page64 + (SIZE_4KB * (Idx + 1)) + Attribute;
     }
 
     // PDE
-    Page64 = (UINT64 *)((UINTN)Page64 + Entries * sizeof(UINT64));
+    Page64 = (UINT64 *)((UINTN)Page64 + SIZE_4KB);
     Entries *= 512;
     for (Idx = 0; Idx < Entries; Idx++, Address += SIZE_2MB) {
       Page64[Idx] = Address + (Attribute | IA32_PG_PD);
