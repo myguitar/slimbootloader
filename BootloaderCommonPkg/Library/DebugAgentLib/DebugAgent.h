@@ -10,7 +10,7 @@
 #define _DEBUG_AGENT_H_
 
 #include <Uefi/UefiBaseType.h>
-#include <Library/LocalApic.h>
+#include <Register/Intel/ArchitecturalMsr.h>
 #include <Guid/DebugAgentGuid.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
