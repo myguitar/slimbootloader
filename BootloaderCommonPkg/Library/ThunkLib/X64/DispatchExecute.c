@@ -12,6 +12,7 @@
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/BlMemoryAllocationLib.h>
+#include <Library/DebugAgentLib.h>
 
 typedef EFI_STATUS (EFIAPI *EXECUTE_64BIT_CODE) (UINT64 Param1, UINT64 Param2);
 
@@ -96,6 +97,7 @@ Execute32BitCode (
   IA32_DESCRIPTOR  IdtrNul;
   IA32_DESCRIPTOR  Gdtr;
   EXECUTE_32BIT_CODE ExecuteCode;
+  BOOLEAN          InterruptState;
 
   //
   // Idtr might be changed inside of FSP. 32bit FSP only knows the <4G address.
@@ -112,6 +114,7 @@ Execute32BitCode (
     ExecuteCode = (EXECUTE_32BIT_CODE)AsmExecute32BitCode;
   }
 
+  InterruptState = SaveAndDisableInterrupts ();
   AsmReadIdtr (&Idtr);
   // Let FSP to setup the IDT
   IdtrNul.Base  = 0x0000;
@@ -119,6 +122,7 @@ Execute32BitCode (
   AsmWriteIdtr (&IdtrNul);
   Status = ExecuteCode (Function, Param1, Param2, &Gdtr);
   AsmWriteIdtr (&Idtr);
+  SaveAndSetDebugTimerInterrupt (InterruptState);
 
   return Status;
 }

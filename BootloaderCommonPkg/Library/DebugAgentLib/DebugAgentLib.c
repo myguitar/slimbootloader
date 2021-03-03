@@ -253,7 +253,7 @@ UpdateDebugAgentIdt (
   )
 {
   IA32_DESCRIPTOR              Idtr;
-  IA32_IDT_ENTRY              *IdtEntry;
+  IA32_IDT_GATE_DESCRIPTOR    *IdtEntry;
   UINT64                      *MailboxLocationPointer;
   DEBUG_AGENT_MAILBOX         *Mailbox;
 
@@ -285,9 +285,8 @@ UpdateDebugAgentIdt (
 
   IdtDescriptor = &Idtr;
 
-  IdtEntry = (IA32_IDT_ENTRY *)(IdtDescriptor->Base);
-  MailboxLocationPointer = (UINT64 *) ((UINTN) IdtEntry[DEBUG_MAILBOX_VECTOR].Bits.OffsetLow +
-                                      ((UINTN) IdtEntry[DEBUG_MAILBOX_VECTOR].Bits.OffsetHigh << 16));
+  IdtEntry = (IA32_IDT_GATE_DESCRIPTOR *)(IdtDescriptor->Base);
+  MailboxLocationPointer = (UINT64 *)GetExceptionHandlerInIdtEntryPointer (IdtEntry, DEBUG_MAILBOX_VECTOR);
   Mailbox = (DEBUG_AGENT_MAILBOX *) (UINTN)(*MailboxLocationPointer);
   //
   // Mailbox should valid and setup before executing thunk code

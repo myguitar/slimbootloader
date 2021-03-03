@@ -131,40 +131,6 @@ typedef struct {
 } DEBUG_AGENT_MAILBOX;
 #pragma pack()
 
-///
-/// Byte packed structure for an IA-32 Interrupt Gate Descriptor.
-///
-typedef union {
-  struct {
-    UINT32  OffsetLow:16;   ///< Offset bits 15..0.
-    UINT32  Selector:16;    ///< Selector.
-    UINT32  Reserved_0:8;   ///< Reserved.
-    UINT32  GateType:8;     ///< Gate Type.  See #defines above.
-    UINT32  OffsetHigh:16;  ///< Offset bits 31..16.
-  } Bits;
-  UINT64  Uint64;
-} IA32_IDT_ENTRY;
-
-
-typedef union {
-  struct {
-    UINT32  LimitLow    : 16;
-    UINT32  BaseLow     : 16;
-    UINT32  BaseMid     : 8;
-    UINT32  Type        : 4;
-    UINT32  System      : 1;
-    UINT32  Dpl         : 2;
-    UINT32  Present     : 1;
-    UINT32  LimitHigh   : 4;
-    UINT32  Software    : 1;
-    UINT32  Reserved    : 1;
-    UINT32  DefaultSize : 1;
-    UINT32  Granularity : 1;
-    UINT32  BaseHigh    : 8;
-  } Bits;
-  UINT64  Uint64;
-} IA32_GDT;
-
 /**
   Initialize IDT entries to support source level debug.
 
@@ -389,6 +355,20 @@ UpdateMailboxContent (
   IN DEBUG_AGENT_MAILBOX    *Mailbox,
   IN UINTN                  Index,
   IN UINT64                 Value
+  );
+
+/**
+  Retrieve exception handler from IDT table pointer and ExceptionNum.
+
+  @param[in]  ExceptionNum    Exception number
+
+  @return Exception handler
+
+**/
+VOID *
+GetExceptionHandlerInIdtEntryPointer (
+  IN IA32_IDT_GATE_DESCRIPTOR *IdtEntry,
+  IN UINTN                    ExceptionNum
   );
 
 /**

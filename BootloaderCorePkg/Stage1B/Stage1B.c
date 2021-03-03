@@ -364,7 +364,7 @@ SecStartup2 (
 
   Stage1aParam = (STAGE1A_PARAM *) Params;
   if (Stage1aParam->Stage1BBase != 0) {
-    PeCoffFindAndReportImageInfo ((UINT32) (UINTN) GET_STAGE_MODULE_BASE (Stage1aParam->Stage1BBase));
+    PeCoffFindAndReportImageInfo ((UINTN)GET_STAGE_MODULE_BASE (Stage1aParam->Stage1BBase));
   }
 
   // Reload Exception handler

@@ -267,7 +267,7 @@ SecStartup2 (
   CONTAINER_LIST           *ContainerList;
 
   Stage1aFvBase = PcdGet32 (PcdStage1AFdBase) + PcdGet32 (PcdFSPTSize);
-  PeCoffFindAndReportImageInfo ((UINT32) (UINTN) GET_STAGE_MODULE_BASE (Stage1aFvBase));
+  PeCoffFindAndReportImageInfo ((UINTN)GET_STAGE_MODULE_BASE (Stage1aFvBase));
 
   Stage1aAsmParam = (STAGE1A_ASM_PARAM *)Params;
   LdrGlobal = GetLoaderGlobalDataPointer ();
@@ -550,7 +550,7 @@ ContinueFunc (
 
   // Jump into Stage 1B entry
   if (StageBase != 0) {
-    PeCoffFindAndReportImageInfo ((UINT32)(UINTN)GET_STAGE_MODULE_BASE (StageBase));
+    PeCoffFindAndReportImageInfo ((UINTN)GET_STAGE_MODULE_BASE (StageBase));
     StageEntry = (STAGE_ENTRY) GET_STAGE_MODULE_ENTRY (StageBase);
     if (StageEntry != NULL) {
       Stage1aParam->Stage1BBase = StageBase;

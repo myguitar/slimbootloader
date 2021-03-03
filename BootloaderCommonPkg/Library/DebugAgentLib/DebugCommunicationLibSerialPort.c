@@ -9,6 +9,7 @@
 #include <Base.h>
 
 #include "DebugCommunicationLib.h"
+#include <Library/PlatformHookLib.h>
 #include <Library/SerialPortLib.h>
 #include <Library/DebugLib.h>
 
@@ -57,6 +58,7 @@ DebugPortInitialize (
 {
   RETURN_STATUS      Status;
 
+  PlatformHookSerialPortInitialize ();
   Status = SerialPortInitialize ();
   if (RETURN_ERROR(Status)) {
     DEBUG ((DEBUG_ERROR, "Debug Serial Port: Initialization failed!\n"));

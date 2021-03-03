@@ -1,5 +1,5 @@
 /** @file
-  Supporting functions for IA32 architecture.
+  Supporting functions for X64 architecture.
 
   Copyright (c) 2010 - 2018, Intel Corporation. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -41,17 +41,19 @@ InitializeDebugIdt (
       continue;
     }
     InterruptHandler = (UINTN)&Exception0Handle + Index * ExceptionStubHeaderSize;
-    IdtEntry[Index].Bits.OffsetLow  = (UINT16)(UINTN)InterruptHandler;
-    IdtEntry[Index].Bits.OffsetHigh = (UINT16)((UINTN)InterruptHandler >> 16);
-    IdtEntry[Index].Bits.Selector   = CodeSegment;
-    IdtEntry[Index].Bits.GateType   = IA32_IDT_GATE_TYPE_INTERRUPT_32;
+    IdtEntry[Index].Bits.OffsetLow       = (UINT16)(UINTN)InterruptHandler;
+    IdtEntry[Index].Bits.OffsetHigh      = (UINT16)((UINTN)InterruptHandler >> 16);
+    IdtEntry[Index].Bits.OffsetUpper     = (UINT32)((UINTN)InterruptHandler >> 32);
+    IdtEntry[Index].Bits.Selector        = CodeSegment;
+    IdtEntry[Index].Bits.GateType        = IA32_IDT_GATE_TYPE_INTERRUPT_32;
   }
 
   InterruptHandler = (UINTN) &TimerInterruptHandle;
-  IdtEntry[DEBUG_TIMER_VECTOR].Bits.OffsetLow  = (UINT16)(UINTN)InterruptHandler;
-  IdtEntry[DEBUG_TIMER_VECTOR].Bits.OffsetHigh = (UINT16)((UINTN)InterruptHandler >> 16);
-  IdtEntry[DEBUG_TIMER_VECTOR].Bits.Selector   = CodeSegment;
-  IdtEntry[DEBUG_TIMER_VECTOR].Bits.GateType   = IA32_IDT_GATE_TYPE_INTERRUPT_32;
+  IdtEntry[DEBUG_TIMER_VECTOR].Bits.OffsetLow       = (UINT16)(UINTN)InterruptHandler;
+  IdtEntry[DEBUG_TIMER_VECTOR].Bits.OffsetHigh      = (UINT16)((UINTN)InterruptHandler >> 16);
+  IdtEntry[DEBUG_TIMER_VECTOR].Bits.OffsetUpper     = (UINT32)((UINTN)InterruptHandler >> 32);
+  IdtEntry[DEBUG_TIMER_VECTOR].Bits.Selector        = CodeSegment;
+  IdtEntry[DEBUG_TIMER_VECTOR].Bits.GateType        = IA32_IDT_GATE_TYPE_INTERRUPT_32;
 
   //
   // If the CPU supports Debug Extensions(CPUID:01 EDX:BIT2), then
@@ -78,8 +80,9 @@ GetExceptionHandlerInIdtEntryPointer (
   )
 {
   if (IdtEntry != NULL) {
-    return (VOID *) (((UINTN)IdtEntry[ExceptionNum].Bits.OffsetLow) |
-                    (((UINTN)IdtEntry[ExceptionNum].Bits.OffsetHigh) << 16));
+    return (VOID *) (IdtEntry[ExceptionNum].Bits.OffsetLow |
+                    (((UINTN)IdtEntry[ExceptionNum].Bits.OffsetHigh) << 16) |
+                    (((UINTN)IdtEntry[ExceptionNum].Bits.OffsetUpper) << 32));
   } else {
     return NULL;
   }
@@ -128,4 +131,5 @@ SetExceptionHandlerInIdtEntry (
 
   IdtEntry[ExceptionNum].Bits.OffsetLow   = (UINT16)(UINTN)ExceptionHandler;
   IdtEntry[ExceptionNum].Bits.OffsetHigh  = (UINT16)((UINTN)ExceptionHandler >> 16);
+  IdtEntry[ExceptionNum].Bits.OffsetUpper = (UINT32)((UINTN)ExceptionHandler >> 32);
 }
